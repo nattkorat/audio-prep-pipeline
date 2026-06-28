@@ -1,4 +1,6 @@
 # audio-prep
+[![CI](https://github.com/IDRI-LAB/audio-prep-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/IDRI-LAB/audio-prep-pipeline/actions/workflows/ci.yml)
+
 
 Convert raw MP3 audio into pretraining-ready WAV/FLAC, with validation and a
 dataset manifest as the handoff artifact to the pretraining pipeline.
