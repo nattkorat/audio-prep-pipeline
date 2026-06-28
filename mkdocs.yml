@@ -1,0 +1,54 @@
+site_name: Audio Prep Pipeline
+site_description: Audio preprocessing pipeline for self-supervised speech pretraining
+site_author: IDRI Lab
+
+repo_url: https://github.com/nattkorat/audio-prep-pipeline
+repo_name: nattkorat/audio-prep-pipeline
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.instant
+    - content.code.copy
+    - search.highlight
+    - content.action.edit
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+
+  - User Guide:
+      - Getting Started: getting-started.md
+      - Installation: installation.md
+      - Quick Start: quickstart.md
+      - CLI: cli.md
+      - Configuration: configuration.md
+
+  - Pipeline:
+      - Overview: pipeline/overview.md
+      - Discovery: pipeline/discovery.md
+      - Conversion: pipeline/conversion.md
+      - Validation: pipeline/validation.md
+      - Manifest: pipeline/manifest.md
+
+  - Developer Guide:
+      - Architecture: architecture.md
+      - Contributing: development/contributing.md
+      - Testing: development/testing.md
+      - Roadmap: development/roadmap.md
+
+  - API:
+      - Config: api/config.md
+      - Converter: api/converter.md
+      - Validator: api/validator.md
+      - Manifest: api/manifest.md
+      - Exceptions: api/exceptions.md
