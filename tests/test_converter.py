@@ -1,0 +1,164 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+import soundfile as sf
+
+from audio_prep.config import ConversionConfig
+from audio_prep.converter import convert_batch, convert_file, find_audio_files
+from tests.conftest import make_sine_mp3
+
+
+class TestFindAudioFiles:
+    def test_finds_mp3_files_recursively(self, source_corpus: Path) -> None:
+        files = find_audio_files(source_corpus)
+        names = {f.name for f in files}
+        assert "clip_001.mp3" in names
+        assert "broken.mp3" in names  # discovery doesn't validate, just lists
+        assert "notes.txt" not in names
+
+    def test_returns_sorted_deterministic_order(self, source_corpus: Path) -> None:
+        files = find_audio_files(source_corpus)
+        assert files == sorted(files)
+
+    def test_raises_on_missing_directory(self, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError):
+            find_audio_files(tmp_path / "does_not_exist")
+
+    def test_empty_directory_returns_empty_list(self, tmp_path: Path) -> None:
+        empty = tmp_path / "empty"
+        empty.mkdir()
+        assert find_audio_files(empty) == []
+
+
+class TestConvertFile:
+    def test_converts_to_requested_sample_rate_and_channels(
+        self, sine_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        dest = tmp_path / "out.wav"
+        result = convert_file(sine_mp3, dest, default_config)
+
+        assert result.success
+        assert dest.is_file()
+        info = sf.info(str(dest))
+        assert info.samplerate == default_config.sample_rate
+        assert info.channels == default_config.channels
+
+    def test_converts_to_flac(self, sine_mp3: Path, tmp_path: Path) -> None:
+        config = ConversionConfig(output_format="flac", sample_rate=16_000, channels=1)
+        dest = tmp_path / "out.flac"
+        result = convert_file(sine_mp3, dest, config)
+
+        assert result.success
+        assert dest.suffix == ".flac"
+        info = sf.info(str(dest))
+        assert info.format == "FLAC"
+
+    def test_preserves_approximate_duration(
+        self, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        src = make_sine_mp3(tmp_path / "two_sec.mp3", duration=2.0)
+        dest = tmp_path / "two_sec.wav"
+        convert_file(src, dest, default_config)
+
+        info = sf.info(str(dest))
+        duration = info.frames / info.samplerate
+        assert duration == pytest.approx(2.0, abs=0.2)
+
+    def test_missing_source_returns_failure_not_exception(
+        self, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        result = convert_file(tmp_path / "nope.mp3", tmp_path / "out.wav", default_config)
+        assert not result.success
+        assert result.output is None
+        assert "not found" in (result.error or "")
+
+    def test_corrupt_source_returns_failure_not_exception(
+        self, corrupt_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        result = convert_file(corrupt_mp3, tmp_path / "out.wav", default_config)
+        assert not result.success
+        assert result.error is not None
+
+    def test_skips_existing_output_when_not_overwriting(
+        self, sine_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        dest = tmp_path / "out.wav"
+        dest.write_bytes(b"already here")
+
+        result = convert_file(sine_mp3, dest, default_config)
+
+        assert result.success
+        assert dest.read_bytes() == b"already here"  # untouched
+
+    def test_overwrite_true_replaces_existing_output(self, sine_mp3: Path, tmp_path: Path) -> None:
+        config = ConversionConfig(sample_rate=16_000, channels=1, overwrite=True)
+        dest = tmp_path / "out.wav"
+        dest.write_bytes(b"stale placeholder")
+
+        result = convert_file(sine_mp3, dest, config)
+
+        assert result.success
+        assert dest.read_bytes() != b"stale placeholder"
+
+    def test_creates_nested_output_directories(
+        self, sine_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        dest = tmp_path / "a" / "b" / "c" / "out.wav"
+        result = convert_file(sine_mp3, dest, default_config)
+        assert result.success
+        assert dest.is_file()
+
+
+class TestConvertBatch:
+    def test_converts_all_valid_files_and_reports_failures(
+        self, source_corpus: Path, tmp_path: Path
+    ) -> None:
+        output_dir = tmp_path / "out"
+        config = ConversionConfig(sample_rate=16_000, channels=1, num_workers=1)
+
+        results = convert_batch(source_corpus, output_dir, config)
+
+        assert len(results) == 5  # 4 mp3-named files incl. broken + too_short
+        failures = [r for r in results if not r.success]
+        successes = [r for r in results if r.success]
+        assert len(failures) == 1  # only the corrupt file fails at conversion time
+        assert failures[0].source.name == "broken.mp3"
+        assert len(successes) == 4
+
+    def test_mirrors_input_subdirectory_structure(
+        self, source_corpus: Path, tmp_path: Path
+    ) -> None:
+        output_dir = tmp_path / "out"
+        config = ConversionConfig(sample_rate=16_000, channels=1, num_workers=1)
+
+        results = convert_batch(source_corpus, output_dir, config)
+        ok = next(
+            r
+            for r in results
+            if r.success and r.source.name == "clip_001.mp3" and "speaker_a" in str(r.source)
+        )
+        assert ok.output is not None
+        assert ok.output.parent.name == "speaker_a"
+
+    def test_parallel_and_sequential_workers_produce_same_results(
+        self, source_corpus: Path, tmp_path: Path
+    ) -> None:
+        config_seq = ConversionConfig(sample_rate=16_000, channels=1, num_workers=1)
+        config_par = ConversionConfig(sample_rate=16_000, channels=1, num_workers=4)
+
+        results_seq = convert_batch(source_corpus, tmp_path / "seq", config_seq)
+        results_par = convert_batch(source_corpus, tmp_path / "par", config_par)
+
+        seq_sources = [r.source.name for r in results_seq]
+        par_sources = [r.source.name for r in results_par]
+        assert seq_sources == par_sources  # deterministic ordering regardless of worker count
+
+    def test_empty_input_directory_returns_empty_results(
+        self, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        empty_input = tmp_path / "empty"
+        empty_input.mkdir()
+        results = convert_batch(empty_input, tmp_path / "out", default_config)
+        assert results == []
