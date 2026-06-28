@@ -111,3 +111,5 @@ Natural next additions, in roughly the order they'd come up:
   all `ConversionResult`s in memory before writing.
 - **Silence/VAD-based trimming** as a pre-validation step, if leading/trailing
   silence in source recordings turns out to matter for the pretraining run.
+
+**Note**: This is the template, that you have to extend from. `Main` branch is protected so you have to create another branch to work on.
