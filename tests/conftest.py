@@ -16,14 +16,14 @@ import pytest
 from audio_prep.config import ConversionConfig
 
 
-def make_sine_mp3(
+def make_sine_audio(
     path: Path,
     duration: float = 1.0,
     frequency: int = 440,
     sample_rate: int = 44_100,
     channels: int = 1,
 ) -> Path:
-    """Generate a synthetic sine-wave MP3 at ``path`` using ffmpeg lavfi."""
+    """Generate a synthetic sine-wave audio file at ``path`` using ffmpeg lavfi."""
     path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
         "ffmpeg",
@@ -41,6 +41,17 @@ def make_sine_mp3(
     ]
     subprocess.run(cmd, check=True, capture_output=True)
     return path
+
+
+def make_sine_mp3(
+    path: Path,
+    duration: float = 1.0,
+    frequency: int = 440,
+    sample_rate: int = 44_100,
+    channels: int = 1,
+) -> Path:
+    """Generate a synthetic sine-wave MP3 at ``path`` using ffmpeg lavfi."""
+    return make_sine_audio(path, duration, frequency, sample_rate, channels)
 
 
 def make_corrupt_file(path: Path) -> Path:

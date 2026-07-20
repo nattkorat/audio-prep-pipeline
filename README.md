@@ -2,8 +2,10 @@
 [![CI](https://github.com/IDRI-LAB/audio-prep-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nattkorat/audio-prep-pipeline/actions/workflows/ci.yml)
 
 
-Convert raw MP3 audio into pretraining-ready WAV/FLAC, with validation and a
-dataset manifest as the handoff artifact to the pretraining pipeline.
+Convert source audio into pretraining-ready WAV/FLAC, with validation and a
+dataset manifest as the handoff artifact to the pretraining pipeline. Discovery
+supports common FFmpeg-readable audio/video containers by default and can scan
+all files with `--extensions all`.
 
 Defaults: **16 kHz, mono** — the standard input spec for Wav2Vec2 / XLS-R
 style self-supervised speech pretraining. Override via CLI flags if a
@@ -37,19 +39,19 @@ audio-prep-pipeline/
 ## Commands
 
 `audio-prep` has two independent subcommands. Neither depends on the other
-running first -- both scan `--input-dir` for `.mp3` files directly.
+running first -- both scan `--input-dir` for supported source files directly.
 
 - **`audio-prep convert`** - conversion only: `ffmpeg` resample/remix/re-encode
   into the target WAV/FLAC spec, then validation, then an optional manifest.
   Does not chunk.
 - **`audio-prep chunk`** - chunking only: Silero VAD speech chunking straight
-  from MP3, with its own resample/format/manifest options. Does not convert
+  from source audio, with its own resample/format/manifest options. Does not convert
   or validate.
 
 ### `convert` pipeline stages
 
-1. **discovery** (`find_audio_files`) — recursively find `.mp3` files under an
-   input directory.
+1. **discovery** (`find_audio_files`) — recursively find supported source files
+   under an input directory.
 2. **conversion** (`convert_file` / `convert_batch`) — shell out to `ffmpeg` to
    resample/remix/re-encode into the target WAV/FLAC spec. Mirrors the input
    directory's subfolder structure on output. Runs in a process pool since
@@ -68,8 +70,8 @@ job three hours in.
 
 ### `chunk` pipeline stages
 
-1. **discovery** (`find_audio_files`) — recursively find `.mp3` files under an
-   input directory.
+1. **discovery** (`find_audio_files`) — recursively find supported source files
+   under an input directory.
 2. **chunking** (`chunk_file` / `chunk_batch`) — runs Silero VAD over each
    file (decoding/resampling via ffmpeg) and splits it into speech-only
    chunks bounded by a `[min, max]` duration window, so silence-heavy source
@@ -120,20 +122,21 @@ audio-prep convert \
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--input-dir` | *(required)* | directory of source MP3s |
+| `--input-dir` | *(required)* | directory of source audio files |
 | `--output-dir` | *(required)* | where converted output is written |
+| `--extensions` | common FFmpeg audio/video extensions | comma-separated source extensions, or `all` to pass every regular file to FFmpeg |
 | `--format` | `wav` | output format (`wav` or `flac`) |
 | `--sample-rate` | 16000 | target sample rate |
 | `--channels` | 1 | target channel count |
 | `--workers` | 4 | parallel conversion workers |
 | `--min-duration-sec` | 0.5 | validation fails files shorter than this |
-| `--overwrite` | off | re-convert even if output already exists |
+| `--overwrite` | off | re-convert even if output already exists and passes validation |
 | `--normalize-loudness` | off | apply EBU R128 loudness normalization (-23 LUFS) |
 | `--manifest` | none | path to write a JSONL manifest |
 
 ### `audio-prep chunk`
 
-Independent of `convert` -- scans `--input-dir` for `.mp3` files and runs VAD
+Independent of `convert` -- scans `--input-dir` for supported source files and runs VAD
 chunking directly against them, decoding (and resampling, if `--sample-rate`
 doesn't match the source) via ffmpeg:
 
@@ -151,8 +154,9 @@ audio-prep chunk \
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--input-dir` | *(required)* | directory of source MP3s to scan and chunk |
+| `--input-dir` | *(required)* | directory of source audio files to scan and chunk |
 | `--output-dir` | `<input-dir>/chunks` | where chunks are written |
+| `--extensions` | common FFmpeg audio/video extensions | comma-separated source extensions, or `all` to pass every regular file to FFmpeg |
 | `--format` | `wav` | output chunk format (`wav` or `flac`) |
 | `--sample-rate` | 16000 | resample (via ffmpeg) to this rate before chunking if the source doesn't already match it |
 | `--min-duration-sec` | 5.0 | drop chunks shorter than this |
@@ -165,7 +169,7 @@ audio-prep chunk \
 `chunk_file` itself doesn't care about source extension -- it decodes
 whatever path it's given -- so the Python API can also chunk an existing
 WAV/FLAC corpus (e.g. `convert_batch` output) by passing `source_files`
-explicitly instead of relying on `chunk_batch`'s MP3 auto-discovery:
+explicitly instead of relying on `chunk_batch` discovery:
 
 ```python
 from audio_prep import ConversionConfig, convert_batch, build_manifest, validate_output
@@ -176,7 +180,7 @@ results = convert_batch("data/raw_mp3", "data/wav16k", config)
 validations = {r.output: validate_output(r.output, config) for r in results if r.success}
 records = build_manifest(results, validations)
 
-# source_files bypasses chunk_batch's MP3-only discovery, so this works
+# source_files bypasses chunk_batch discovery, so this works
 # directly against the already-converted WAV output above.
 valid_outputs = [path for path, v in validations.items() if v.valid]
 chunk_config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, num_workers=4)
@@ -202,12 +206,6 @@ push and PR.
 
 Natural next additions, in roughly the order they'd come up:
 
-- **Resume support**: skip files whose output already exists *and* passes
-  validation (currently `overwrite=False` skips on existence alone — fine for
-  a first pass, but doesn't catch a previous partial/corrupt write).
-- **Source format beyond MP3**: `find_audio_files` already accepts an
-  `extensions` tuple — wiring that through the CLI covers `.m4a`/`.ogg`/etc.
-  for free since the ffmpeg command doesn't care about input container.
 - **Streaming manifest writes** for very large corpora, instead of holding
   all `ConversionResult`s in memory before writing.
 

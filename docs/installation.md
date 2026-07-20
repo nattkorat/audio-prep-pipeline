@@ -1,0 +1,62 @@
+# Installation
+
+## Requirements
+
+- Python 3.10 or newer
+- FFmpeg and FFprobe available on `PATH`
+- `libsndfile`, usually installed automatically with `soundfile` wheels on
+  common platforms
+
+## Install FFmpeg
+
+macOS:
+
+<pre><code>brew install ffmpeg</code></pre>
+
+
+Ubuntu or Debian:
+
+<pre><code>sudo apt-get update
+sudo apt-get install ffmpeg</code></pre>
+
+
+Check that both binaries are available:
+
+<pre><code>ffmpeg -version
+ffprobe -version</code></pre>
+
+
+## Install The Package
+
+For local development:
+
+<pre><code>make install</code></pre>
+
+
+This runs:
+
+<pre><code>pip install -e &quot;.[dev]&quot;
+pre-commit install</code></pre>
+
+
+For conversion-only usage:
+
+<pre><code>pip install -e .</code></pre>
+
+
+For documentation work:
+
+<pre><code>pip install -e &quot;.[docs]&quot;</code></pre>
+
+
+## Optional Chunking Dependencies
+
+Speech chunking uses Silero VAD. Install the optional extra when you need the
+`audio-prep chunk` command:
+
+<pre><code>pip install -e &quot;.[chunking]&quot;</code></pre>
+
+
+The first chunking run can load Silero from the installed `silero-vad` package
+or from `torch.hub`. If neither is available, pass `--allow-energy-fallback` to
+use the lower-quality offline energy detector.

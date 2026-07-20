@@ -16,20 +16,53 @@ from pathlib import Path
 
 from audio_prep.chunker import SUPPORTED_CHUNK_FORMATS
 from audio_prep.config import SUPPORTED_OUTPUT_FORMATS, ConversionConfig
-from audio_prep.converter import convert_batch, find_audio_files
+from audio_prep.converter import DEFAULT_SOURCE_EXTENSIONS, convert_batch, find_audio_files
 from audio_prep.manifest import build_manifest, write_manifest
 from audio_prep.validator import validate_output
 
 logger = logging.getLogger("audio_prep")
 
 
+def _parse_extensions(value: str) -> tuple[str, ...] | None:
+    """Parse a comma-separated extension list.
+
+    Returns None for "all", which means "discover every regular file and let
+    ffmpeg decide whether it can decode it".
+    """
+    if value.strip().lower() == "all":
+        return None
+
+    extensions = []
+    for raw in value.split(","):
+        ext = raw.strip().lower()
+        if not ext:
+            continue
+        extensions.append(ext if ext.startswith(".") else f".{ext}")
+
+    if not extensions:
+        raise argparse.ArgumentTypeError("extensions must be a comma-separated list or 'all'")
+
+    return tuple(dict.fromkeys(extensions))
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="audio-prep")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    convert = sub.add_parser("convert", help="convert MP3s into pretraining-ready WAV/FLAC")
+    default_extensions = ",".join(ext.lstrip(".") for ext in DEFAULT_SOURCE_EXTENSIONS)
+
+    convert = sub.add_parser("convert", help="convert source audio into pretraining-ready WAV/FLAC")
     convert.add_argument("--input-dir", type=Path, required=True)
     convert.add_argument("--output-dir", type=Path, required=True)
+    convert.add_argument(
+        "--extensions",
+        type=_parse_extensions,
+        default=DEFAULT_SOURCE_EXTENSIONS,
+        help=(
+            "comma-separated source extensions to discover, or 'all' to pass every "
+            f"regular file to ffmpeg (default: {default_extensions})"
+        ),
+    )
     convert.add_argument("--format", choices=SUPPORTED_OUTPUT_FORMATS, default="wav")
     convert.add_argument("--sample-rate", type=int, default=16_000)
     convert.add_argument("--channels", type=int, default=1)
@@ -41,12 +74,19 @@ def _build_parser() -> argparse.ArgumentParser:
         "--manifest", type=Path, default=None, help="path to write a JSONL manifest"
     )
 
-    chunk = sub.add_parser(
-        "chunk", help="run VAD speech chunking directly against a directory of MP3s"
-    )
-    chunk.add_argument("--input-dir", type=Path, required=True, help="directory of source MP3s")
+    chunk = sub.add_parser("chunk", help="run VAD speech chunking directly against source audio")
+    chunk.add_argument("--input-dir", type=Path, required=True, help="directory of source audio")
     chunk.add_argument(
         "--output-dir", type=Path, default=None, help="defaults to <input-dir>/chunks"
+    )
+    chunk.add_argument(
+        "--extensions",
+        type=_parse_extensions,
+        default=DEFAULT_SOURCE_EXTENSIONS,
+        help=(
+            "comma-separated source extensions to discover, or 'all' to pass every "
+            f"regular file to ffmpeg (default: {default_extensions})"
+        ),
     )
     chunk.add_argument("--format", choices=SUPPORTED_CHUNK_FORMATS, default="wav")
     chunk.add_argument(
@@ -83,7 +123,7 @@ def run_convert(args: argparse.Namespace) -> int:
         normalize_loudness=args.normalize_loudness,
     )
 
-    files = find_audio_files(args.input_dir)
+    files = find_audio_files(args.input_dir, args.extensions)
     logger.info("Found %d source file(s) under %s", len(files), args.input_dir)
 
     results = convert_batch(args.input_dir, args.output_dir, config, source_files=files)
@@ -122,7 +162,10 @@ def run_chunk(args: argparse.Namespace) -> int:
         allow_energy_fallback=args.allow_energy_fallback,
     )
 
-    results = chunk_batch(args.input_dir, output_dir, config)
+    files = find_audio_files(args.input_dir, args.extensions)
+    logger.info("Found %d source file(s) under %s", len(files), args.input_dir)
+
+    results = chunk_batch(args.input_dir, output_dir, config, source_files=files)
     n_ok = sum(1 for r in results if r.success)
     n_chunks = sum(len(r.chunks) for r in results)
     logger.info(

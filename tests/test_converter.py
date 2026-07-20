@@ -8,16 +8,45 @@ import soundfile as sf
 from audio_prep import converter
 from audio_prep.config import ConversionConfig
 from audio_prep.converter import _build_ffmpeg_cmd, convert_batch, convert_file, find_audio_files
-from tests.conftest import make_sine_mp3
+from tests.conftest import make_sine_audio, make_sine_mp3
 
 
 class TestFindAudioFiles:
-    def test_finds_mp3_files_recursively(self, source_corpus: Path) -> None:
+    def test_finds_supported_source_files_recursively(self, source_corpus: Path) -> None:
         files = find_audio_files(source_corpus)
         names = {f.name for f in files}
         assert "clip_001.mp3" in names
         assert "broken.mp3" in names  # discovery doesn't validate, just lists
         assert "notes.txt" not in names
+
+    def test_finds_common_ffmpeg_audio_containers_by_default(self, tmp_path: Path) -> None:
+        input_dir = tmp_path / "raw"
+        make_sine_audio(input_dir / "clip.wav", duration=1.0)
+        make_sine_audio(input_dir / "clip.flac", duration=1.0)
+        make_sine_audio(input_dir / "clip.m4a", duration=1.0)
+        (input_dir / "notes.txt").write_text("not audio")
+
+        files = find_audio_files(input_dir)
+
+        assert [p.name for p in files] == ["clip.flac", "clip.m4a", "clip.wav"]
+
+    def test_accepts_custom_extension_filter_without_leading_dot(self, tmp_path: Path) -> None:
+        input_dir = tmp_path / "raw"
+        make_sine_audio(input_dir / "clip.wav", duration=1.0)
+        make_sine_mp3(input_dir / "clip.mp3", duration=1.0)
+
+        files = find_audio_files(input_dir, extensions=("wav",))
+
+        assert [p.name for p in files] == ["clip.wav"]
+
+    def test_extensions_none_returns_every_regular_file(self, tmp_path: Path) -> None:
+        input_dir = tmp_path / "raw"
+        make_sine_audio(input_dir / "clip.wav", duration=1.0)
+        (input_dir / "notes.txt").write_text("not audio")
+
+        files = find_audio_files(input_dir, extensions=None)
+
+        assert [p.name for p in files] == ["clip.wav", "notes.txt"]
 
     def test_returns_sorted_deterministic_order(self, source_corpus: Path) -> None:
         files = find_audio_files(source_corpus)
@@ -56,6 +85,18 @@ class TestConvertFile:
         info = sf.info(str(dest))
         assert info.format == "FLAC"
 
+    def test_converts_non_mp3_source(
+        self, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        source = make_sine_audio(tmp_path / "source.m4a", duration=1.0)
+        dest = tmp_path / "out.wav"
+
+        result = convert_file(source, dest, default_config)
+
+        assert result.success
+        assert dest.is_file()
+        assert sf.info(str(dest)).samplerate == default_config.sample_rate
+
     def test_preserves_approximate_duration(
         self, tmp_path: Path, default_config: ConversionConfig
     ) -> None:
@@ -82,16 +123,66 @@ class TestConvertFile:
         assert not result.success
         assert result.error is not None
 
-    def test_skips_existing_output_when_not_overwriting(
-        self, sine_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    def test_skips_existing_valid_output_when_not_overwriting(
+        self,
+        sine_mp3: Path,
+        tmp_path: Path,
+        default_config: ConversionConfig,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         dest = tmp_path / "out.wav"
-        dest.write_bytes(b"already here")
+        initial = convert_file(sine_mp3, dest, default_config)
+        assert initial.success
+        original_bytes = dest.read_bytes()
+
+        def fail_if_ffmpeg_runs(*args: object, **kwargs: object) -> None:
+            pytest.fail("ffmpeg should not run for an existing valid output")
+
+        monkeypatch.setattr(converter.subprocess, "run", fail_if_ffmpeg_runs)
 
         result = convert_file(sine_mp3, dest, default_config)
 
         assert result.success
-        assert dest.read_bytes() == b"already here"  # untouched
+        assert dest.read_bytes() == original_bytes
+
+    def test_rewrites_corrupt_existing_output_when_not_overwriting(
+        self, sine_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        dest = tmp_path / "out.wav"
+        dest.write_bytes(b"already here, but not actually audio")
+
+        result = convert_file(sine_mp3, dest, default_config)
+
+        assert result.success
+        info = sf.info(str(dest))
+        assert info.samplerate == default_config.sample_rate
+        assert info.channels == default_config.channels
+
+    def test_rewrites_existing_output_with_wrong_spec_when_not_overwriting(
+        self, sine_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        dest = tmp_path / "out.wav"
+        wrong_config = ConversionConfig(sample_rate=8_000, channels=1, overwrite=True)
+        initial = convert_file(sine_mp3, dest, wrong_config)
+        assert initial.success
+        assert sf.info(str(dest)).samplerate == 8_000
+
+        result = convert_file(sine_mp3, dest, default_config)
+
+        assert result.success
+        assert sf.info(str(dest)).samplerate == default_config.sample_rate
+
+    def test_invalid_existing_output_that_cannot_be_replaced_returns_failure(
+        self, sine_mp3: Path, tmp_path: Path, default_config: ConversionConfig
+    ) -> None:
+        dest = tmp_path / "out.wav"
+        dest.mkdir()
+
+        result = convert_file(sine_mp3, dest, default_config)
+
+        assert not result.success
+        assert result.output is None
+        assert "could not replace invalid existing output" in (result.error or "")
 
     def test_overwrite_true_replaces_existing_output(self, sine_mp3: Path, tmp_path: Path) -> None:
         config = ConversionConfig(sample_rate=16_000, channels=1, overwrite=True)
@@ -204,3 +295,27 @@ class TestConvertBatch:
         empty_input.mkdir()
         results = convert_batch(empty_input, tmp_path / "out", default_config)
         assert results == []
+
+    def test_default_discovery_converts_mixed_source_formats(self, tmp_path: Path) -> None:
+        input_dir = tmp_path / "raw"
+        make_sine_mp3(input_dir / "a.mp3", duration=1.0)
+        make_sine_audio(input_dir / "b.wav", duration=1.0)
+        (input_dir / "notes.txt").write_text("not audio")
+        config = ConversionConfig(sample_rate=16_000, channels=1, num_workers=1)
+
+        results = convert_batch(input_dir, tmp_path / "out", config)
+
+        assert [r.source.name for r in results] == ["a.mp3", "b.wav"]
+        assert all(r.success for r in results)
+
+    def test_same_stem_different_source_formats_do_not_collide(self, tmp_path: Path) -> None:
+        input_dir = tmp_path / "raw"
+        make_sine_mp3(input_dir / "clip.mp3", duration=1.0)
+        make_sine_audio(input_dir / "clip.wav", duration=1.0)
+        config = ConversionConfig(sample_rate=16_000, channels=1, num_workers=1)
+
+        results = convert_batch(input_dir, tmp_path / "out", config)
+
+        outputs = sorted(r.output.name for r in results if r.output is not None)
+        assert outputs == ["clip_mp3.wav", "clip_wav.wav"]
+        assert all(r.success for r in results)

@@ -21,7 +21,7 @@ class ConversionConfig:
     num_workers: int = 4
     min_duration_sec: float = 0.5
     overwrite: bool = False
-    # ffmpeg loudness normalization (helps when source MP3s vary wildly in level)
+    # ffmpeg loudness normalization (helps when source recordings vary wildly in level)
     normalize_loudness: bool = False
 
     def __post_init__(self) -> None:

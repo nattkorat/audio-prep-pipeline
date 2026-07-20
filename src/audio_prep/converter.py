@@ -1,26 +1,71 @@
-"""MP3 -> WAV/FLAC conversion, backed by ffmpeg.
+"""Source audio -> WAV/FLAC conversion, backed by ffmpeg.
 
-Why shell out to ffmpeg rather than a pure-Python decoder: MP3 decoding
-quality/robustness across the long tail of real-world files (VBR, odd
-headers, ID3 variants) is handled far more reliably by ffmpeg than by
-any pure-Python library, and it's the same tool most ASR pretraining
-pipelines (fairseq, ESPnet, HF examples) lean on under the hood.
+Why shell out to ffmpeg rather than a pure-Python decoder: source audio
+decoding quality/robustness across the long tail of real-world files
+(VBR, odd headers, container variants, metadata quirks) is handled far
+more reliably by ffmpeg than by any pure-Python library, and it's the
+same tool most ASR pretraining pipelines (fairseq, ESPnet, HF examples)
+lean on under the hood.
 """
 
 from __future__ import annotations
 
 import logging
 import subprocess
+from collections import Counter
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
 from audio_prep.config import ConversionConfig
 from audio_prep.exceptions import ConversionError
+from audio_prep.validator import validate_output
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SOURCE_EXTENSIONS = (".mp3",)
+SUPPORTED_SOURCE_EXTENSIONS = (
+    ".3gp",
+    ".aac",
+    ".ac3",
+    ".aif",
+    ".aiff",
+    ".alac",
+    ".amr",
+    ".ape",
+    ".asf",
+    ".au",
+    ".avi",
+    ".caf",
+    ".dts",
+    ".flac",
+    ".flv",
+    ".m4a",
+    ".m4b",
+    ".m4p",
+    ".m4v",
+    ".mka",
+    ".mkv",
+    ".mov",
+    ".mp2",
+    ".mp3",
+    ".mp4",
+    ".mpc",
+    ".mpeg",
+    ".mpg",
+    ".oga",
+    ".ogg",
+    ".opus",
+    ".ra",
+    ".spx",
+    ".ts",
+    ".tta",
+    ".wav",
+    ".weba",
+    ".webm",
+    ".wma",
+    ".wv",
+)
+DEFAULT_SOURCE_EXTENSIONS = SUPPORTED_SOURCE_EXTENSIONS
 
 
 @dataclass(slots=True)
@@ -35,19 +80,24 @@ class ConversionResult:
 
 def find_audio_files(
     input_dir: Path,
-    extensions: tuple[str, ...] = DEFAULT_SOURCE_EXTENSIONS,
+    extensions: tuple[str, ...] | None = DEFAULT_SOURCE_EXTENSIONS,
 ) -> list[Path]:
     """Recursively find source audio files under ``input_dir``.
 
-    Matching is case-insensitive on the extension. Files are returned in
-    sorted order so pipeline runs are deterministic.
+    Matching is case-insensitive on the extension. Pass ``extensions=None``
+    to return every regular file and let ffmpeg decide whether each source
+    is decodable audio. Files are returned in sorted order so pipeline runs
+    are deterministic.
     """
     input_dir = Path(input_dir)
     if not input_dir.is_dir():
         raise FileNotFoundError(f"input_dir does not exist or is not a directory: {input_dir}")
 
-    lowered = {ext.lower() for ext in extensions}
-    matches = [p for p in input_dir.rglob("*") if p.is_file() and p.suffix.lower() in lowered]
+    if extensions is None:
+        matches = [p for p in input_dir.rglob("*") if p.is_file()]
+    else:
+        lowered = {ext.lower() if ext.startswith(".") else f".{ext.lower()}" for ext in extensions}
+        matches = [p for p in input_dir.rglob("*") if p.is_file() and p.suffix.lower() in lowered]
     return sorted(matches)
 
 
@@ -76,6 +126,10 @@ def _build_ffmpeg_cmd(source: Path, dest: Path, config: ConversionConfig) -> lis
     return cmd
 
 
+def _is_valid_existing_output(path: Path, config: ConversionConfig) -> bool:
+    return validate_output(path, config).valid
+
+
 def convert_file(source: Path, dest: Path, config: ConversionConfig) -> ConversionResult:
     """Convert a single source file to the target format/spec.
 
@@ -90,7 +144,17 @@ def convert_file(source: Path, dest: Path, config: ConversionConfig) -> Conversi
         return ConversionResult(source, None, success=False, error=f"source not found: {source}")
 
     if dest.exists() and not config.overwrite:
-        return ConversionResult(source, dest, success=True, error=None)
+        if _is_valid_existing_output(dest, config):
+            return ConversionResult(source, dest, success=True, error=None)
+        try:
+            dest.unlink()
+        except OSError as exc:
+            return ConversionResult(
+                source,
+                None,
+                success=False,
+                error=f"could not replace invalid existing output {dest}: {exc}",
+            )
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     cmd = _build_ffmpeg_cmd(source, dest, config)
@@ -114,11 +178,24 @@ def _dest_for(source: Path, input_dir: Path, output_dir: Path, config: Conversio
     return output_dir / relative
 
 
+def _dest_for_collision(
+    source: Path,
+    input_dir: Path,
+    output_dir: Path,
+    config: ConversionConfig,
+) -> Path:
+    relative = source.relative_to(input_dir)
+    source_ext = source.suffix.lower().lstrip(".") or "no_ext"
+    filename = f"{relative.stem}_{source_ext}.{config.output_format}"
+    return output_dir / relative.parent / filename
+
+
 def convert_batch(
     input_dir: Path,
     output_dir: Path,
     config: ConversionConfig | None = None,
     source_files: list[Path] | None = None,
+    extensions: tuple[str, ...] | None = DEFAULT_SOURCE_EXTENSIONS,
 ) -> list[ConversionResult]:
     """Convert every source file under ``input_dir`` into ``output_dir``.
 
@@ -127,17 +204,29 @@ def convert_batch(
 
     Pass ``source_files`` to convert a pre-filtered list instead of
     re-discovering files (useful for tests and for resuming partial runs).
+    Pass ``extensions=None`` to discover every regular file and let ffmpeg
+    report unsupported inputs as per-file conversion failures.
     """
     config = config or ConversionConfig()
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
 
-    files = source_files if source_files is not None else find_audio_files(input_dir)
+    files = source_files if source_files is not None else find_audio_files(input_dir, extensions)
     if not files:
         logger.warning("No source audio files found under %s", input_dir)
         return []
 
     jobs = [(f, _dest_for(f, input_dir, output_dir, config)) for f in files]
+    dest_counts = Counter(dst for _src, dst in jobs)
+    jobs = [
+        (
+            src,
+            _dest_for_collision(src, input_dir, output_dir, config)
+            if dest_counts[dst] > 1
+            else dst,
+        )
+        for src, dst in jobs
+    ]
 
     if config.num_workers == 1:
         return [convert_file(src, dst, config) for src, dst in jobs]
