@@ -17,13 +17,15 @@ audio-prep-pipeline/
 │   ├── config.py        # ConversionConfig: target spec + behavior knobs
 │   ├── converter.py      # find_audio_files, convert_file, convert_batch
 │   ├── validator.py      # probe_duration, validate_output
+│   ├── chunker.py         # (optional) ChunkConfig, chunk_file, chunk_batch -- Silero VAD speech chunking
 │   ├── manifest.py       # build_manifest, write_manifest (JSONL output)
-│   ├── exceptions.py     # ConversionError, ProbeError
-│   └── cli.py             # `audio-prep convert ...` entry point
+│   ├── exceptions.py     # ConversionError, ProbeError, ChunkingError
+│   └── cli.py             # `audio-prep convert ...` / `audio-prep chunk ...` entry point
 ├── tests/
 │   ├── conftest.py        # synthetic-audio fixtures (no binary files checked in)
 │   ├── test_converter.py
 │   ├── test_validator.py
+│   ├── test_chunker.py    # fake-detector tests, no real VAD model needed
 │   ├── test_manifest.py
 │   └── test_cli.py
 ├── .github/workflows/ci.yml   # lint + typecheck + test matrix (3.10-3.12)
@@ -32,7 +34,19 @@ audio-prep-pipeline/
 └── Makefile                      # `make check` runs everything CI runs, locally
 ```
 
-## Pipeline stages
+## Commands
+
+`audio-prep` has two independent subcommands. Neither depends on the other
+running first -- both scan `--input-dir` for `.mp3` files directly.
+
+- **`audio-prep convert`** - conversion only: `ffmpeg` resample/remix/re-encode
+  into the target WAV/FLAC spec, then validation, then an optional manifest.
+  Does not chunk.
+- **`audio-prep chunk`** - chunking only: Silero VAD speech chunking straight
+  from MP3, with its own resample/format/manifest options. Does not convert
+  or validate.
+
+### `convert` pipeline stages
 
 1. **discovery** (`find_audio_files`) — recursively find `.mp3` files under an
    input directory.
@@ -52,6 +66,22 @@ Conversion failures don't abort the batch — a bad file in a 50,000-file
 corpus shows up as one `conversion_failed` row in the manifest, not a crashed
 job three hours in.
 
+### `chunk` pipeline stages
+
+1. **discovery** (`find_audio_files`) — recursively find `.mp3` files under an
+   input directory.
+2. **chunking** (`chunk_file` / `chunk_batch`) — runs Silero VAD over each
+   file (decoding/resampling via ffmpeg) and splits it into speech-only
+   chunks bounded by a `[min, max]` duration window, so silence-heavy source
+   recordings don't waste pretraining compute. Needs the `chunking` extra
+   (`torch` + `silero-vad`, see Setup below).
+3. **manifest** (`build_chunk_manifest` / `write_manifest`), optional — JSONL
+   file, one row per source file, recording `status` (`ok` /
+   `chunking_failed`), chunk count, and chunk paths.
+
+Chunking failures (e.g. no speech detected) work the same way: `chunk_batch`
+returns a `ChunkResult` per file instead of raising.
+
 ## Setup
 
 ```bash
@@ -61,7 +91,22 @@ sudo apt-get install ffmpeg   # or: brew install ffmpeg
 make install   # pip install -e ".[dev]" + pre-commit install
 ```
 
+Chunking needs an extra install -- `make install` alone does not pull in
+`torch`/`silero-vad`/`tqdm`, since `convert` doesn't need them:
+
+```bash
+pip install -e ".[chunking]"
+```
+
+The first `chunk` run needs either the `silero-vad` pip package installed, or
+network access so `torch.hub` can download `snakers4/silero-vad` once (it's
+then cached under `~/.cache/torch/hub`). If neither is available, pass
+`--allow-energy-fallback` to use a lower-quality offline detector instead of
+failing.
+
 ## Usage
+
+### `audio-prep convert`
 
 ```bash
 audio-prep convert \
@@ -73,15 +118,69 @@ audio-prep convert \
     --manifest data/manifest.jsonl
 ```
 
-Or import directly for use inside a larger script / notebook:
+| Flag | Default | Meaning |
+|---|---|---|
+| `--input-dir` | *(required)* | directory of source MP3s |
+| `--output-dir` | *(required)* | where converted output is written |
+| `--format` | `wav` | output format (`wav` or `flac`) |
+| `--sample-rate` | 16000 | target sample rate |
+| `--channels` | 1 | target channel count |
+| `--workers` | 4 | parallel conversion workers |
+| `--min-duration-sec` | 0.5 | validation fails files shorter than this |
+| `--overwrite` | off | re-convert even if output already exists |
+| `--normalize-loudness` | off | apply EBU R128 loudness normalization (-23 LUFS) |
+| `--manifest` | none | path to write a JSONL manifest |
+
+### `audio-prep chunk`
+
+Independent of `convert` -- scans `--input-dir` for `.mp3` files and runs VAD
+chunking directly against them, decoding (and resampling, if `--sample-rate`
+doesn't match the source) via ffmpeg:
+
+```bash
+audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --sample-rate 16000 \
+    --format flac \
+    --min-duration-sec 5 \
+    --max-duration-sec 20 \
+    --workers 4 \
+    --manifest data/chunk_manifest.jsonl
+```
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--input-dir` | *(required)* | directory of source MP3s to scan and chunk |
+| `--output-dir` | `<input-dir>/chunks` | where chunks are written |
+| `--format` | `wav` | output chunk format (`wav` or `flac`) |
+| `--sample-rate` | 16000 | resample (via ffmpeg) to this rate before chunking if the source doesn't already match it |
+| `--min-duration-sec` | 5.0 | drop chunks shorter than this |
+| `--max-duration-sec` | 20.0 | split longer speech into windows this size |
+| `--workers` | 4 | parallel chunking workers |
+| `--overwrite` | off | re-chunk even if valid output already exists |
+| `--allow-energy-fallback` | off | fall back to a low-quality energy detector if Silero can't load, instead of raising |
+| `--manifest` | none | path to write a JSONL chunk manifest (source file, status, chunk count/paths) |
+
+`chunk_file` itself doesn't care about source extension -- it decodes
+whatever path it's given -- so the Python API can also chunk an existing
+WAV/FLAC corpus (e.g. `convert_batch` output) by passing `source_files`
+explicitly instead of relying on `chunk_batch`'s MP3 auto-discovery:
 
 ```python
 from audio_prep import ConversionConfig, convert_batch, build_manifest, validate_output
+from audio_prep import ChunkConfig, chunk_batch
 
 config = ConversionConfig(output_format="wav", sample_rate=16_000, channels=1, num_workers=8)
 results = convert_batch("data/raw_mp3", "data/wav16k", config)
 validations = {r.output: validate_output(r.output, config) for r in results if r.success}
 records = build_manifest(results, validations)
+
+# source_files bypasses chunk_batch's MP3-only discovery, so this works
+# directly against the already-converted WAV output above.
+valid_outputs = [path for path, v in validations.items() if v.valid]
+chunk_config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, num_workers=4)
+chunk_results = chunk_batch("data/wav16k", "data/wav16k/chunks", chunk_config, source_files=valid_outputs)
 ```
 
 ## Development workflow
@@ -111,7 +210,5 @@ Natural next additions, in roughly the order they'd come up:
   for free since the ffmpeg command doesn't care about input container.
 - **Streaming manifest writes** for very large corpora, instead of holding
   all `ConversionResult`s in memory before writing.
-- **Silence/VAD-based trimming** as a pre-validation step, if leading/trailing
-  silence in source recordings turns out to matter for the pretraining run.
 
 **Note**: This is the template, that you have to extend from. `Main` branch is protected so you have to create another branch to work on.

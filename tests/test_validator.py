@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from audio_prep import validator
 from audio_prep.config import ConversionConfig
 from audio_prep.converter import convert_file
 from audio_prep.exceptions import ProbeError
@@ -22,6 +24,16 @@ class TestProbeDuration:
     def test_raises_probe_error_on_corrupt_file(self, corrupt_mp3: Path) -> None:
         with pytest.raises(ProbeError):
             probe_duration(corrupt_mp3)
+
+    def test_raises_probe_error_on_unparseable_ffprobe_output(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """ffprobe exiting 0 but printing a non-numeric duration must not crash."""
+        fake = subprocess.CompletedProcess(args=[], returncode=0, stdout="N/A\n", stderr="")
+        monkeypatch.setattr(validator.subprocess, "run", lambda *a, **kw: fake)
+
+        with pytest.raises(ProbeError, match="could not parse duration"):
+            probe_duration(tmp_path / "whatever.wav")
 
 
 class TestValidateOutput:
