@@ -35,11 +35,24 @@ If two source files in the same directory share a stem, such as `clip.mp3` and
 `clip.wav`, chunk outputs are written into disambiguated subdirectories such as
 `clip_mp3/` and `clip_wav/`.
 
+## CLI Example
+
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --format flac \
+    --sample-rate 16000 \
+    --min-duration-sec 5 \
+    --max-duration-sec 20 \
+    --workers 4 \
+    --manifest data/chunk_manifest.jsonl</code></pre>
+
+
 ## Python Example
 
 <pre><code>from pathlib import Path
 
-from audio_prep import ChunkConfig, chunk_batch
+from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
 config = ChunkConfig(
     min_duration_sec=5,
@@ -53,4 +66,6 @@ results = chunk_batch(
     Path(&quot;data/raw_mp3&quot;),
     Path(&quot;data/chunks&quot;),
     config,
-)</code></pre>
+)
+records = build_chunk_manifest(results)
+write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>

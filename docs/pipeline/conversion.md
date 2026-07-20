@@ -2,6 +2,40 @@
 
 Conversion is handled by FFmpeg through `convert_file` and `convert_batch`.
 
+## CLI Example
+
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --format wav \
+    --sample-rate 16000 \
+    --channels 1 \
+    --workers 4 \
+    --manifest data/manifest.jsonl</code></pre>
+
+
+## Python Example
+
+<pre><code>from pathlib import Path
+
+from audio_prep import ConversionConfig, build_manifest, convert_batch, validate_output, write_manifest
+
+config = ConversionConfig(
+    output_format=&quot;wav&quot;,
+    sample_rate=16_000,
+    channels=1,
+    num_workers=4,
+)
+
+results = convert_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/wav16k&quot;), config)
+validations = {
+    result.output: validate_output(result.output, config)
+    for result in results
+    if result.success and result.output is not None
+}
+records = build_manifest(results, validations)
+write_manifest(records, Path(&quot;data/manifest.jsonl&quot;))</code></pre>
+
 ## Output Path Rules
 
 For batch conversion, the output path is derived from the source path relative

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "audio-prep-pipeline"
-version = "0.1.1"
+version = "0.1.2"
 description = "Convert raw MP3 audio into pretraining-ready WAV/FLAC, with validation and dataset manifest output."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,6 +28,9 @@ dependencies = [
     # which breaks mypy when this project targets Python 3.10 compatibility.
     "numpy>=1.24,<2.3",
     "soundfile>=0.12",
+    "torch>=2.0.0",
+    "silero-vad>=6.2.1",
+    "tqdm>=4.66.0",
 ]
 
 [project.scripts]
@@ -50,15 +53,10 @@ docs = [
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
 ]
-# Speech chunking (audio_prep.chunker) is an optional pipeline stage --
-# torch + silero-vad are heavy relative to the rest of this project, so
-# they're not part of the base install. `audio-prep chunk`
-# imports audio_prep.chunker lazily and needs this extra installed.
-chunking = [
-    "torch>=2.0.0",
-    "silero-vad>=6.2.1",
-    "tqdm>=4.66.0",
-]
+# Backward-compatible no-op extra: chunking dependencies are included in the
+# base install so `audio-prep convert` and `audio-prep chunk` are both ready
+# after `pip install audio-prep-pipeline`.
+chunking = []
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/audio_prep"]

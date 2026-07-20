@@ -146,9 +146,7 @@ def run_convert(args: argparse.Namespace) -> int:
 
 
 def run_chunk(args: argparse.Namespace) -> int:
-    # Imported lazily: chunking needs the 'chunking' extra (torch +
-    # silero-vad) to actually run, even though importing the module itself
-    # doesn't.
+    # Imported lazily so conversion-only commands do not pay chunker import cost.
     from audio_prep.chunker import ChunkConfig, chunk_batch
 
     output_dir = args.output_dir or (args.input_dir / "chunks")

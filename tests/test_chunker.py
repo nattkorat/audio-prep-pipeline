@@ -1,6 +1,6 @@
 """Tests for audio_prep.chunker.
 
-Silero VAD (torch + silero-vad) is an optional extra, so these tests
+Silero VAD (torch + silero-vad) is a base dependency, but these tests
 never load a real model: `chunk_audio_with_vad`/`chunk_file` accept a
 `detect` callable, and `chunk_batch` is exercised via a monkeypatched
 `load_vad_model`, so the VAD stage itself is a fake, deterministic

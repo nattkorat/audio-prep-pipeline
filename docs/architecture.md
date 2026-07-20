@@ -30,7 +30,8 @@ finish even when individual files are broken.
 FFmpeg success is not treated as enough. Converted output is reopened and
 checked for sample rate, channel count, readability, and minimum duration.
 
-## Optional Chunking Dependencies
+## Chunking Dependencies
 
-Chunking imports heavy dependencies lazily. Conversion-only users do not need
-Torch or Silero VAD installed.
+The base package includes Torch, Silero VAD, and tqdm so both `convert` and
+`chunk` are ready after `pip install audio-prep-pipeline`. Chunker imports are
+still lazy, so conversion-only commands avoid VAD startup cost.

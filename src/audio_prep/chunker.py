@@ -7,13 +7,11 @@ Decoding (and resampling, via `ChunkConfig.sample_rate`) is done with
 ffmpeg, the same as `converter.py`, so it doesn't depend on `soundfile`
 being built with support for every source container.
 
-Silero VAD pulls in `torch` (and optionally the `silero-vad` package),
-which are heavy compared to the rest of this project's footprint. Those
-imports are deferred to first use inside this module, so importing
-`audio_prep` or running `audio-prep convert` never requires them --
-only `audio-prep chunk` does. Install with the `chunking` extra to use it:
-
-    pip install -e ".[chunking]"
+Silero VAD pulls in `torch` and `silero-vad`, which are heavy compared to
+the rest of this project's footprint. They are part of the base package
+dependencies so both `audio-prep convert` and `audio-prep chunk` are ready
+after `pip install audio-prep-pipeline`; imports are still deferred to first
+VAD use so conversion startup stays light.
 """
 
 from __future__ import annotations
@@ -57,9 +55,8 @@ class ChunkingError(AudioPrepError):
 class ChunkConfig:
     """VAD chunking behavior knobs.
 
-    Kept separate from `ConversionConfig` since chunking is an optional
-    pipeline stage with its own dependency footprint (torch + silero-vad)
-    and its own notion of "duration" (per-chunk, not per-file).
+    Kept separate from `ConversionConfig` since chunking has its own notion
+    of "duration" (per-chunk, not per-file) and VAD-specific behavior.
     """
 
     min_duration_sec: float = 5.0

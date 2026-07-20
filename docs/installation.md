@@ -49,7 +49,7 @@ Install directly from GitHub:
 <pre><code>pip install &quot;audio-prep-pipeline @ git+https://github.com/nattkorat/audio-prep-pipeline.git&quot;</code></pre>
 
 
-For conversion-only usage:
+For editable local usage without developer tools:
 
 <pre><code>pip install -e .</code></pre>
 
@@ -59,19 +59,14 @@ For documentation work:
 <pre><code>pip install -e &quot;.[docs]&quot;</code></pre>
 
 
-## Optional Chunking Dependencies
+## Chunking Dependencies
 
-Speech chunking uses Silero VAD. Install the optional extra when you need the
-`audio-prep chunk` command:
+The standard package install includes `torch`, `silero-vad`, and `tqdm`, so
+both `audio-prep convert` and `audio-prep chunk` are ready after:
 
-<pre><code>pip install -e &quot;.[chunking]&quot;</code></pre>
-
-
-Install chunking support directly from GitHub:
-
-<pre><code>pip install &quot;audio-prep-pipeline[chunking] @ git+https://github.com/nattkorat/audio-prep-pipeline.git&quot;</code></pre>
+<pre><code>pip install audio-prep-pipeline</code></pre>
 
 
-The first chunking run can load Silero from the installed `silero-vad` package
-or from `torch.hub`. If neither is available, pass `--allow-energy-fallback` to
-use the lower-quality offline energy detector.
+The first chunking run loads Silero from the installed `silero-vad` package.
+If Silero cannot load in an offline environment, pass `--allow-energy-fallback`
+to use the lower-quality offline energy detector.
