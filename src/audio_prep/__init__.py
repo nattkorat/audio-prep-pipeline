@@ -4,7 +4,7 @@ Pipeline stages:
     1. discovery   - find source audio files under an input directory
     2. conversion  - decode + resample + remix to a target WAV/FLAC spec
     3. validation  - sanity-check converted output (sample rate, duration, integrity)
-    4. chunking    - (optional) split into speech-only chunks via Silero VAD
+    4. chunking    - split into speech-only chunks via Silero VAD
     5. manifest    - emit a JSONL manifest describing the resulting dataset
 """
 
@@ -19,10 +19,16 @@ from audio_prep.converter import (
     find_audio_files,
 )
 from audio_prep.exceptions import AudioPrepError, ConversionError, ProbeError
-from audio_prep.manifest import ManifestRecord, build_manifest
+from audio_prep.manifest import (
+    ChunkManifestRecord,
+    ManifestRecord,
+    build_chunk_manifest,
+    build_manifest,
+    write_manifest,
+)
 from audio_prep.validator import ValidationResult, validate_output
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
     "ConversionConfig",
@@ -36,7 +42,10 @@ __all__ = [
     "ConversionError",
     "ProbeError",
     "ManifestRecord",
+    "ChunkManifestRecord",
     "build_manifest",
+    "build_chunk_manifest",
+    "write_manifest",
     "ValidationResult",
     "validate_output",
     "ChunkConfig",

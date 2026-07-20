@@ -17,7 +17,18 @@ flags for command-line use.
 | `overwrite` | `False` | Force regeneration of existing outputs. |
 | `normalize_loudness` | `False` | Apply FFmpeg `loudnorm`. |
 
-Example:
+CLI:
+
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/flac16k \
+    --format flac \
+    --sample-rate 16000 \
+    --channels 1 \
+    --workers 8</code></pre>
+
+
+Python:
 
 <pre><code>from audio_prep import ConversionConfig
 
@@ -45,7 +56,19 @@ Invalid values raise `ValueError`.
 | `overwrite` | `False` | Force regeneration of valid existing chunks. |
 | `allow_energy_fallback` | `False` | Use the energy detector if Silero cannot load. |
 
-Example:
+CLI:
+
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --format flac \
+    --sample-rate 16000 \
+    --min-duration-sec 5 \
+    --max-duration-sec 20 \
+    --workers 4</code></pre>
+
+
+Python:
 
 <pre><code>from audio_prep import ChunkConfig
 

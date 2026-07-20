@@ -37,7 +37,9 @@ Example:
 
 <pre><code>from pathlib import Path
 
-from audio_prep import ChunkConfig, chunk_batch
+from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
 config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, sample_rate=16_000)
-results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)</code></pre>
+results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
+records = build_chunk_manifest(results)
+write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>

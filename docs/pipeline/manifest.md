@@ -39,6 +39,21 @@ Fields:
 
 ## Writing Manifests
 
+CLI:
+
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --manifest data/manifest.jsonl
+
+audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --manifest data/chunk_manifest.jsonl</code></pre>
+
+
+Python:
+
 Use `write_manifest` for both conversion and chunk records:
 
 <pre><code>from audio_prep.manifest import write_manifest

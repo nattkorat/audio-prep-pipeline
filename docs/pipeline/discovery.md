@@ -40,5 +40,19 @@ can be decoded:
 
 <pre><code>files = find_audio_files(Path("data/mixed"), extensions=None)</code></pre>
 
-The CLI exposes the same behavior with `--extensions`. Use `--extensions all`
-to scan every regular file.
+## CLI Example
+
+The CLI exposes the same behavior with `--extensions`:
+
+<pre><code>audio-prep convert \
+    --input-dir data/audio \
+    --output-dir data/wav16k \
+    --extensions mp3,m4a,ogg
+
+audio-prep chunk \
+    --input-dir data/mixed \
+    --output-dir data/chunks \
+    --extensions all</code></pre>
+
+
+Use `--extensions all` to scan every regular file.

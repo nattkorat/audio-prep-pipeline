@@ -21,6 +21,19 @@ reason.
 `probe_duration` uses FFprobe and can inspect formats that `soundfile` may not
 read directly, including MP3.
 
+## CLI Example
+
+Validation runs automatically after every successful conversion:
+
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --sample-rate 16000 \
+    --channels 1 \
+    --min-duration-sec 0.5 \
+    --manifest data/manifest.jsonl</code></pre>
+
+
 ## Python Example
 
 <pre><code>from pathlib import Path
@@ -32,4 +45,3 @@ result = validate_output(Path(&quot;data/wav16k/clip.wav&quot;), config)
 
 if not result.valid:
     print(result.reason)</code></pre>
-

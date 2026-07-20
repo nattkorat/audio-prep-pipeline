@@ -27,7 +27,7 @@ audio-prep-pipeline/
 │   ├── config.py        # ConversionConfig: target spec + behavior knobs
 │   ├── converter.py      # find_audio_files, convert_file, convert_batch
 │   ├── validator.py      # probe_duration, validate_output
-│   ├── chunker.py         # (optional) ChunkConfig, chunk_file, chunk_batch -- Silero VAD speech chunking
+│   ├── chunker.py         # ChunkConfig, chunk_file, chunk_batch -- Silero VAD speech chunking
 │   ├── manifest.py       # build_manifest, write_manifest (JSONL output)
 │   ├── exceptions.py     # ConversionError, ProbeError, ChunkingError
 │   └── cli.py             # `audio-prep convert ...` / `audio-prep chunk ...` entry point
@@ -83,8 +83,7 @@ job three hours in.
 2. **chunking** (`chunk_file` / `chunk_batch`) — runs Silero VAD over each
    file (decoding/resampling via ffmpeg) and splits it into speech-only
    chunks bounded by a `[min, max]` duration window, so silence-heavy source
-   recordings don't waste pretraining compute. Needs the `chunking` extra
-   (`torch` + `silero-vad`, see Setup below).
+   recordings don't waste pretraining compute.
 3. **manifest** (`build_chunk_manifest` / `write_manifest`), optional — JSONL
    file, one row per source file, recording `status` (`ok` /
    `chunking_failed`), chunk count, and chunk paths.
@@ -113,28 +112,16 @@ For local development:
 make install   # pip install -e ".[dev]" + pre-commit install
 ```
 
-Chunking needs an extra install -- `make install` alone does not pull in
-`torch`/`silero-vad`/`tqdm`, since `convert` doesn't need them:
-
-```bash
-pip install -e ".[chunking]"
-```
-
-Or from GitHub:
-
-```bash
-pip install "audio-prep-pipeline[chunking] @ git+https://github.com/nattkorat/audio-prep-pipeline.git"
-```
-
-The first `chunk` run needs either the `silero-vad` pip package installed, or
-network access so `torch.hub` can download `snakers4/silero-vad` once (it's
-then cached under `~/.cache/torch/hub`). If neither is available, pass
-`--allow-energy-fallback` to use a lower-quality offline detector instead of
-failing.
+The same install provides both `audio-prep convert` and `audio-prep chunk`.
+FFmpeg/FFprobe are still system dependencies and must be available on `PATH`.
+If Silero VAD cannot load in an offline environment, pass
+`--allow-energy-fallback` to use a lower-quality offline detector instead.
 
 ## Usage
 
 ### `audio-prep convert`
+
+CLI:
 
 ```bash
 audio-prep convert \
@@ -144,6 +131,30 @@ audio-prep convert \
     --sample-rate 16000 \
     --workers 8 \
     --manifest data/manifest.jsonl
+```
+
+Python:
+
+```python
+from pathlib import Path
+
+from audio_prep import ConversionConfig, build_manifest, convert_batch, validate_output, write_manifest
+
+config = ConversionConfig(
+    output_format="wav",
+    sample_rate=16_000,
+    channels=1,
+    num_workers=8,
+)
+
+results = convert_batch(Path("data/raw_mp3"), Path("data/wav16k"), config)
+validations = {
+    result.output: validate_output(result.output, config)
+    for result in results
+    if result.success and result.output is not None
+}
+records = build_manifest(results, validations)
+write_manifest(records, Path("data/manifest.jsonl"))
 ```
 
 | Flag | Default | Meaning |
@@ -166,6 +177,8 @@ Independent of `convert` -- scans `--input-dir` for supported source files and r
 chunking directly against them, decoding (and resampling, if `--sample-rate`
 doesn't match the source) via ffmpeg:
 
+CLI:
+
 ```bash
 audio-prep chunk \
     --input-dir data/raw_mp3 \
@@ -176,6 +189,26 @@ audio-prep chunk \
     --max-duration-sec 20 \
     --workers 4 \
     --manifest data/chunk_manifest.jsonl
+```
+
+Python:
+
+```python
+from pathlib import Path
+
+from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
+
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    output_format="flac",
+    sample_rate=16_000,
+    num_workers=4,
+)
+
+results = chunk_batch(Path("data/raw_mp3"), Path("data/chunks"), config)
+records = build_chunk_manifest(results)
+write_manifest(records, Path("data/chunk_manifest.jsonl"))
 ```
 
 | Flag | Default | Meaning |
@@ -195,22 +228,34 @@ audio-prep chunk \
 `chunk_file` itself doesn't care about source extension -- it decodes
 whatever path it's given -- so the Python API can also chunk an existing
 WAV/FLAC corpus (e.g. `convert_batch` output) by passing `source_files`
-explicitly instead of relying on `chunk_batch` discovery:
+explicitly instead of relying on `chunk_batch` discovery. This is an advanced
+Python API case:
 
 ```python
-from audio_prep import ConversionConfig, convert_batch, build_manifest, validate_output
-from audio_prep import ChunkConfig, chunk_batch
+from pathlib import Path
+
+from audio_prep import ChunkConfig, ConversionConfig, build_manifest, chunk_batch
+from audio_prep import convert_batch, validate_output
 
 config = ConversionConfig(output_format="wav", sample_rate=16_000, channels=1, num_workers=8)
-results = convert_batch("data/raw_mp3", "data/wav16k", config)
-validations = {r.output: validate_output(r.output, config) for r in results if r.success}
+results = convert_batch(Path("data/raw_mp3"), Path("data/wav16k"), config)
+validations = {
+    result.output: validate_output(result.output, config)
+    for result in results
+    if result.success and result.output is not None
+}
 records = build_manifest(results, validations)
 
 # source_files bypasses chunk_batch discovery, so this works
 # directly against the already-converted WAV output above.
 valid_outputs = [path for path, v in validations.items() if v.valid]
 chunk_config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, num_workers=4)
-chunk_results = chunk_batch("data/wav16k", "data/wav16k/chunks", chunk_config, source_files=valid_outputs)
+chunk_results = chunk_batch(
+    Path("data/wav16k"),
+    Path("data/wav16k/chunks"),
+    chunk_config,
+    source_files=valid_outputs,
+)
 ```
 
 ## Development workflow
