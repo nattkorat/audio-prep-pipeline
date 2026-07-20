@@ -1,6 +1,7 @@
 # audio-prep
 
 [![CI](https://github.com/nattkorat/audio-prep-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nattkorat/audio-prep-pipeline/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/audio-prep.svg)](https://pypi.org/project/audio-prep/)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-46a2f1)
