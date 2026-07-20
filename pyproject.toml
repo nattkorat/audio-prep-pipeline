@@ -23,6 +23,15 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.10",
 ]
+# Speech chunking (audio_prep.chunker) is an optional pipeline stage --
+# torch + silero-vad are heavy relative to the rest of this project, so
+# they're not part of the base install. `audio-prep convert --chunk-speech`
+# imports audio_prep.chunker lazily and needs this extra installed.
+chunking = [
+    "torch>=2.0.0",
+    "silero-vad>=6.2.1",
+    "tqdm>=4.66.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/audio_prep"]

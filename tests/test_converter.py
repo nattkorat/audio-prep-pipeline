@@ -5,8 +5,9 @@ from pathlib import Path
 import pytest
 import soundfile as sf
 
+from audio_prep import converter
 from audio_prep.config import ConversionConfig
-from audio_prep.converter import convert_batch, convert_file, find_audio_files
+from audio_prep.converter import _build_ffmpeg_cmd, convert_batch, convert_file, find_audio_files
 from tests.conftest import make_sine_mp3
 
 
@@ -109,6 +110,47 @@ class TestConvertFile:
         result = convert_file(sine_mp3, dest, default_config)
         assert result.success
         assert dest.is_file()
+
+    def test_missing_ffmpeg_binary_returns_failure_not_exception(
+        self,
+        sine_mp3: Path,
+        tmp_path: Path,
+        default_config: ConversionConfig,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def no_ffmpeg(*args: object, **kwargs: object) -> None:
+            raise FileNotFoundError("No such file or directory: 'ffmpeg'")
+
+        monkeypatch.setattr(converter.subprocess, "run", no_ffmpeg)
+
+        result = convert_file(sine_mp3, tmp_path / "out.wav", default_config)
+
+        assert not result.success
+        assert result.output is None
+        assert "ffmpeg" in (result.error or "")
+
+
+class TestBuildFfmpegCmd:
+    def test_normalize_loudness_adds_loudnorm_filter(self, tmp_path: Path) -> None:
+        config = ConversionConfig(sample_rate=16_000, channels=1, normalize_loudness=True)
+        cmd = _build_ffmpeg_cmd(tmp_path / "in.mp3", tmp_path / "out.wav", config)
+        assert "-af" in cmd
+        assert any("loudnorm" in part for part in cmd)
+
+    def test_default_config_omits_loudnorm_filter(self, tmp_path: Path) -> None:
+        config = ConversionConfig(sample_rate=16_000, channels=1)
+        cmd = _build_ffmpeg_cmd(tmp_path / "in.mp3", tmp_path / "out.wav", config)
+        assert "-af" not in cmd
+
+    def test_normalize_loudness_converts_successfully_end_to_end(
+        self, sine_mp3: Path, tmp_path: Path
+    ) -> None:
+        config = ConversionConfig(
+            sample_rate=16_000, channels=1, normalize_loudness=True, overwrite=True
+        )
+        result = convert_file(sine_mp3, tmp_path / "out.wav", config)
+        assert result.success
+        assert result.output is not None and result.output.is_file()
 
 
 class TestConvertBatch:

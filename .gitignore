@@ -27,3 +27,4 @@ manifest.jsonl
 .DS_Store
 .vscode/
 .idea/
+results/

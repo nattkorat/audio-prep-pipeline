@@ -9,11 +9,18 @@ reader, without needing to load the whole file into memory.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING, TypeVar
 
+from audio_prep.chunker import ChunkResult
 from audio_prep.converter import ConversionResult
 from audio_prep.validator import ValidationResult
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
+
+_RecordT = TypeVar("_RecordT", bound="DataclassInstance")
 
 
 @dataclass(slots=True)
@@ -27,6 +34,31 @@ class ManifestRecord:
     sample_rate: int | None = None
     channels: int | None = None
     error: str | None = None
+
+
+@dataclass(slots=True)
+class ChunkManifestRecord:
+    """One row of the chunk-only manifest (from the standalone `chunk` command)."""
+
+    source_path: str
+    status: str  # "ok" | "chunking_failed"
+    num_chunks: int = 0
+    chunk_paths: list[str] = field(default_factory=list)
+    error: str | None = None
+
+
+def build_chunk_manifest(chunk_results: list[ChunkResult]) -> list[ChunkManifestRecord]:
+    """Turn `chunk_batch` results into manifest records, one row per source file."""
+    return [
+        ChunkManifestRecord(
+            source_path=str(result.source),
+            status="ok" if result.success else "chunking_failed",
+            num_chunks=len(result.chunks),
+            chunk_paths=[str(p) for p in result.chunks],
+            error=result.error,
+        )
+        for result in chunk_results
+    ]
 
 
 def build_manifest(
@@ -80,7 +112,7 @@ def build_manifest(
     return records
 
 
-def write_manifest(records: list[ManifestRecord], manifest_path: Path) -> None:
+def write_manifest(records: list[_RecordT], manifest_path: Path) -> None:
     """Write records to a JSONL file, one record per line."""
     manifest_path = Path(manifest_path)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
