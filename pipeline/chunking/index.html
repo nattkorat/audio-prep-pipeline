@@ -12,22 +12,28 @@
         <meta name="author" content="IDRI Lab">
       
       
+        <link rel="canonical" href="https://nattkorat.github.io/audio-prep-pipeline/pipeline/chunking/">
       
+      
+        <link rel="prev" href="../conversion/">
+      
+      
+        <link rel="next" href="../validation/">
       
       
         
       
       
-      <link rel="icon" href="/audio-prep-pipeline/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Audio Prep Pipeline</title>
+        <title>Chunking - Audio Prep Pipeline</title>
       
     
     
-      <link rel="stylesheet" href="/audio-prep-pipeline/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
       
 
@@ -46,7 +52,7 @@
       
     
     
-    <script>__md_scope=new URL("/audio-prep-pipeline/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -63,6 +69,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#chunking" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -73,7 +84,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/audio-prep-pipeline/." title="Audio Prep Pipeline" class="md-header__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
+    <a href="../.." title="Audio Prep Pipeline" class="md-header__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -93,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Chunking
             
           </span>
         </div>
@@ -178,7 +189,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/audio-prep-pipeline/." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -218,7 +229,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/audio-prep-pipeline/getting-started/" class="md-tabs__link">
+        <a href="../../getting-started/" class="md-tabs__link">
           
   
   
@@ -234,11 +245,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/audio-prep-pipeline/pipeline/overview/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
           
   
   
@@ -258,7 +271,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/audio-prep-pipeline/architecture/" class="md-tabs__link">
+        <a href="../../architecture/" class="md-tabs__link">
           
   
   
@@ -278,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/audio-prep-pipeline/api/config/" class="md-tabs__link">
+        <a href="../../api/config/" class="md-tabs__link">
           
   
   
@@ -312,7 +325,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/audio-prep-pipeline/." title="Audio Prep Pipeline" class="md-nav__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
+    <a href="../.." title="Audio Prep Pipeline" class="md-nav__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -342,7 +355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -448,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -476,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/installation/" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         
   
   
@@ -504,7 +517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -532,7 +545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/cli/" class="md-nav__link">
+      <a href="../../cli/" class="md-nav__link">
         
   
   
@@ -560,7 +573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -592,26 +605,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -629,7 +647,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -647,7 +665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/pipeline/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -675,7 +693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/pipeline/discovery/" class="md-nav__link">
+      <a href="../discovery/" class="md-nav__link">
         
   
   
@@ -703,7 +721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/pipeline/conversion/" class="md-nav__link">
+      <a href="../conversion/" class="md-nav__link">
         
   
   
@@ -728,10 +746,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/pipeline/chunking/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chunking
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -747,6 +792,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decode-and-resample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decode And Resample
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duration-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Duration Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#existing-chunks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing Chunks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -759,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/pipeline/validation/" class="md-nav__link">
+      <a href="../validation/" class="md-nav__link">
         
   
   
@@ -787,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/pipeline/manifest/" class="md-nav__link">
+      <a href="../manifest/" class="md-nav__link">
         
   
   
@@ -874,7 +994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -902,7 +1022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/development/contributing/" class="md-nav__link">
+      <a href="../../development/contributing/" class="md-nav__link">
         
   
   
@@ -930,7 +1050,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/development/testing/" class="md-nav__link">
+      <a href="../../development/testing/" class="md-nav__link">
         
   
   
@@ -958,7 +1078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/development/roadmap/" class="md-nav__link">
+      <a href="../../development/roadmap/" class="md-nav__link">
         
   
   
@@ -1045,7 +1165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/api/config/" class="md-nav__link">
+      <a href="../../api/config/" class="md-nav__link">
         
   
   
@@ -1073,7 +1193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/api/converter/" class="md-nav__link">
+      <a href="../../api/converter/" class="md-nav__link">
         
   
   
@@ -1101,7 +1221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/api/chunker/" class="md-nav__link">
+      <a href="../../api/chunker/" class="md-nav__link">
         
   
   
@@ -1129,7 +1249,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/api/validator/" class="md-nav__link">
+      <a href="../../api/validator/" class="md-nav__link">
         
   
   
@@ -1157,7 +1277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/api/manifest/" class="md-nav__link">
+      <a href="../../api/manifest/" class="md-nav__link">
         
   
   
@@ -1185,7 +1305,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/audio-prep-pipeline/api/exceptions/" class="md-nav__link">
+      <a href="../../api/exceptions/" class="md-nav__link">
         
   
   
@@ -1230,6 +1350,71 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decode-and-resample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decode And Resample
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#duration-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Duration Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#existing-chunks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing Chunks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1242,8 +1427,75 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+    <a href="https://github.com/nattkorat/audio-prep-pipeline/edit/master/docs/pipeline/chunking.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="chunking">Chunking<a class="headerlink" href="#chunking" title="Permanent link">&para;</a></h1>
+<p>Chunking splits source audio into speech-only chunks. It is implemented in
+<code>audio_prep.chunker</code> and exposed through <code>audio-prep chunk</code>.</p>
+<h2 id="detector">Detector<a class="headerlink" href="#detector" title="Permanent link">&para;</a></h2>
+<p>The preferred detector is Silero VAD. The project tries to load Silero from the
+installed <code>silero-vad</code> package first, then from <code>torch.hub</code>.</p>
+<p>If Silero is unavailable and <code>allow_energy_fallback=True</code>, chunking uses a
+simple energy-based detector. This fallback is useful for offline testing but is
+lower quality than Silero.</p>
+<h2 id="decode-and-resample">Decode And Resample<a class="headerlink" href="#decode-and-resample" title="Permanent link">&para;</a></h2>
+<p>Compressed/container sources are decoded through FFmpeg. WAV and FLAC files may
+be read directly with <code>soundfile</code> when no resampling is needed.</p>
+<p>If a sample rate is configured, audio is resampled before VAD and the written
+chunks use that rate.</p>
+<h2 id="duration-rules">Duration Rules<a class="headerlink" href="#duration-rules" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Speech shorter than <code>min_duration_sec</code> is dropped.</li>
+<li>Speech longer than <code>max_duration_sec</code> is split into windows.</li>
+<li>A source file that produces no chunks returns a failed <code>ChunkResult</code>.</li>
+</ul>
+<h2 id="existing-chunks">Existing Chunks<a class="headerlink" href="#existing-chunks" title="Permanent link">&para;</a></h2>
+<p>When <code>overwrite=False</code>, existing chunks are reused only if they are readable and
+match the expected sample rate. Corrupt existing chunks are rewritten.</p>
+<p>If two source files in the same directory share a stem, such as <code>clip.mp3</code> and
+<code>clip.wav</code>, chunk outputs are written into disambiguated subdirectories such as
+<code>clip_mp3/</code> and <code>clip_wav/</code>.</p>
+<h2 id="python-example">Python Example<a class="headerlink" href="#python-example" title="Permanent link">&para;</a></h2>
+<pre><code>from pathlib import Path
+
+from audio_prep import ChunkConfig, chunk_batch
+
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    output_format=&quot;flac&quot;,
+    sample_rate=16_000,
+    num_workers=4,
+)
+
+results = chunk_batch(
+    Path(&quot;data/raw_mp3&quot;),
+    Path(&quot;data/chunks&quot;),
+    config,
+)</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1280,10 +1532,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/audio-prep-pipeline/", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "/audio-prep-pipeline/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/audio-prep-pipeline/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
