@@ -31,6 +31,7 @@ from typing import Any
 
 import numpy as np
 import soundfile as sf
+from numpy.typing import NDArray
 
 from audio_prep.exceptions import AudioPrepError
 
@@ -112,7 +113,8 @@ def _load_vad_from_torch_hub() -> tuple[Any, Callable[..., Any]]:
     import torch
 
     with torch.no_grad():
-        model, utils = torch.hub.load(  # type: ignore[no-untyped-call]
+        hub_load: Callable[..., Any] = torch.hub.load
+        model, utils = hub_load(
             repo_or_dir="snakers4/silero-vad",
             model="silero_vad",
             trust_repo=True,
@@ -127,7 +129,7 @@ def _load_vad_from_torch_hub() -> tuple[Any, Callable[..., Any]]:
     return model, detect
 
 
-def _energy_based_detector(audio: np.ndarray, sampling_rate: int) -> list[dict[str, int]]:
+def _energy_based_detector(audio: NDArray[Any], sampling_rate: int) -> list[dict[str, int]]:
     """Simple RMS-energy VAD fallback for environments without Silero access.
 
     Lower quality than Silero -- only intended as a last resort so a
@@ -215,7 +217,7 @@ def load_vad_model(allow_energy_fallback: bool = False) -> tuple[Any, Callable[.
 
 
 def chunk_audio_with_vad(
-    audio: np.ndarray,
+    audio: NDArray[Any],
     sr: int,
     config: ChunkConfig | None = None,
     detect: Callable[..., Any] | None = None,
@@ -266,7 +268,7 @@ def chunk_audio_with_vad(
 _SOUNDFILE_NATIVE_EXTENSIONS = {".wav", ".flac"}
 
 
-def _decode_via_ffmpeg(source: Path, target_sr: int | None) -> tuple[np.ndarray, int]:
+def _decode_via_ffmpeg(source: Path, target_sr: int | None) -> tuple[NDArray[Any], int]:
     """Decode `source` (mono) via ffmpeg, resampling to `target_sr` if given.
 
     Reuses ffmpeg rather than a pure-Python decoder/resampler for the same
@@ -292,7 +294,7 @@ def _decode_via_ffmpeg(source: Path, target_sr: int | None) -> tuple[np.ndarray,
         tmp_path.unlink(missing_ok=True)
 
 
-def _read_audio_for_chunking(source: Path, target_sr: int | None) -> tuple[np.ndarray, int]:
+def _read_audio_for_chunking(source: Path, target_sr: int | None) -> tuple[NDArray[Any], int]:
     """Read `source`, decoding/resampling via ffmpeg where needed.
 
     Only reads directly through `soundfile` (skipping the ffmpeg

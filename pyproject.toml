@@ -10,6 +10,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
+    # NumPy >=2.3 ships stubs that use Python 3.12-only type statement syntax,
+    # which breaks mypy when this project targets Python 3.10 compatibility.
+    "numpy>=1.24,<2.3",
     "soundfile>=0.12",
 ]
 
