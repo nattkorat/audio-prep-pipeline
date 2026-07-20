@@ -39,6 +39,16 @@ This runs:
 pre-commit install</code></pre>
 
 
+For installation from PyPI:
+
+<pre><code>pip install audio-prep-pipeline</code></pre>
+
+
+Install directly from GitHub:
+
+<pre><code>pip install &quot;audio-prep-pipeline @ git+https://github.com/nattkorat/audio-prep-pipeline.git&quot;</code></pre>
+
+
 For conversion-only usage:
 
 <pre><code>pip install -e .</code></pre>
@@ -55,6 +65,11 @@ Speech chunking uses Silero VAD. Install the optional extra when you need the
 `audio-prep chunk` command:
 
 <pre><code>pip install -e &quot;.[chunking]&quot;</code></pre>
+
+
+Install chunking support directly from GitHub:
+
+<pre><code>pip install &quot;audio-prep-pipeline[chunking] @ git+https://github.com/nattkorat/audio-prep-pipeline.git&quot;</code></pre>
 
 
 The first chunking run can load Silero from the installed `silero-vad` package

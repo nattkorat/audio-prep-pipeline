@@ -1,7 +1,7 @@
 # audio-prep
 
 [![CI](https://github.com/nattkorat/audio-prep-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nattkorat/audio-prep-pipeline/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/audio-prep.svg)](https://pypi.org/project/audio-prep/)
+[![PyPI](https://img.shields.io/pypi/v/audio-prep-pipeline.svg)](https://pypi.org/project/audio-prep-pipeline/)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-46a2f1)
@@ -97,6 +97,18 @@ returns a `ChunkResult` per file instead of raising.
 # ffmpeg is a system dependency, not a pip package
 sudo apt-get install ffmpeg   # or: brew install ffmpeg
 
+pip install audio-prep-pipeline
+```
+
+Install directly from GitHub:
+
+```bash
+pip install "audio-prep-pipeline @ git+https://github.com/nattkorat/audio-prep-pipeline.git"
+```
+
+For local development:
+
+```bash
 make install   # pip install -e ".[dev]" + pre-commit install
 ```
 
@@ -105,6 +117,12 @@ Chunking needs an extra install -- `make install` alone does not pull in
 
 ```bash
 pip install -e ".[chunking]"
+```
+
+Or from GitHub:
+
+```bash
+pip install "audio-prep-pipeline[chunking] @ git+https://github.com/nattkorat/audio-prep-pipeline.git"
 ```
 
 The first `chunk` run needs either the `silero-vad` pip package installed, or
