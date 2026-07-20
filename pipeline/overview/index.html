@@ -757,6 +757,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cli-or-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Or Python
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1370,6 +1381,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cli-or-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Or Python
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1421,6 +1443,34 @@ directly and writes chunks without first running <code>convert</code>.</p>
 <p>Discovery returns sorted file paths so sequential and parallel runs produce
 results in the same order. Output paths mirror source subdirectories under the
 chosen output directory.</p>
+<h2 id="cli-or-python">CLI Or Python<a class="headerlink" href="#cli-or-python" title="Permanent link">&para;</a></h2>
+<p>Run the pipelines directly from the command line:</p>
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --manifest data/manifest.jsonl
+
+audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --manifest data/chunk_manifest.jsonl</code></pre>
+
+<p>Or call the same pipeline functions from Python:</p>
+<pre><code>from pathlib import Path
+
+from audio_prep import ChunkConfig, ConversionConfig, chunk_batch, convert_batch
+
+converted = convert_batch(
+    Path(&quot;data/raw_mp3&quot;),
+    Path(&quot;data/wav16k&quot;),
+    ConversionConfig(),
+)
+
+chunks = chunk_batch(
+    Path(&quot;data/raw_mp3&quot;),
+    Path(&quot;data/chunks&quot;),
+    ChunkConfig(),
+)</code></pre>
 
 
 

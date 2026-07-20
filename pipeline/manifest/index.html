@@ -1489,6 +1489,18 @@
 </tbody>
 </table>
 <h2 id="writing-manifests">Writing Manifests<a class="headerlink" href="#writing-manifests" title="Permanent link">&para;</a></h2>
+<p>CLI:</p>
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --manifest data/manifest.jsonl
+
+audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --manifest data/chunk_manifest.jsonl</code></pre>
+
+<p>Python:</p>
 <p>Use <code>write_manifest</code> for both conversion and chunk records:</p>
 <pre><code>from audio_prep.manifest import write_manifest
 

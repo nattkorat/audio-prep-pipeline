@@ -1496,18 +1496,51 @@ status:</p>
 <h2 id="basic-workflow">Basic Workflow<a class="headerlink" href="#basic-workflow" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Install Python dependencies and FFmpeg.</li>
-<li>Run <code>audio-prep convert</code> against the raw source audio directory.</li>
+<li>Run conversion through either the CLI or Python API.</li>
 <li>Inspect the manifest for failed files.</li>
-<li>Optionally run <code>audio-prep chunk</code> to create speech-only segments.</li>
+<li>Optionally run chunking through either the CLI or Python API to create speech-only segments.</li>
 </ol>
-<p>Example command:</p>
+<p>CLI:</p>
 <pre><code>audio-prep convert \
     --input-dir data/raw_mp3 \
     --output-dir data/wav16k \
     --manifest data/manifest.jsonl</code></pre>
 
+<p>Python:</p>
+<pre><code>from pathlib import Path
+
+from audio_prep import ConversionConfig, build_manifest, convert_batch, validate_output, write_manifest
+
+config = ConversionConfig()
+results = convert_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/wav16k&quot;), config)
+validations = {
+    result.output: validate_output(result.output, config)
+    for result in results
+    if result.success and result.output is not None
+}
+records = build_manifest(results, validations)
+write_manifest(records, Path(&quot;data/manifest.jsonl&quot;))</code></pre>
+
 <p>The default conversion target is 16 kHz mono WAV. Override it only when the
 downstream model expects a different audio spec.</p>
+<p>CLI chunking:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --min-duration-sec 5 \
+    --max-duration-sec 20 \
+    --manifest data/chunk_manifest.jsonl</code></pre>
+
+<p>Python chunking:</p>
+<pre><code>from pathlib import Path
+
+from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
+
+config = ChunkConfig(min_duration_sec=5, max_duration_sec=20)
+results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
+records = build_chunk_manifest(results)
+write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
+
 <h2 id="resume-behavior">Resume Behavior<a class="headerlink" href="#resume-behavior" title="Permanent link">&para;</a></h2>
 <p>With <code>--overwrite</code> off, conversion skips an existing output only when it passes
 the same validation checks as a newly converted file. Empty, corrupt, too-short,

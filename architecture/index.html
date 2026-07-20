@@ -996,10 +996,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#optional-chunking-dependencies" class="md-nav__link">
+  <a href="#chunking-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optional Chunking Dependencies
+        Chunking Dependencies
       
     </span>
   </a>
@@ -1404,10 +1404,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#optional-chunking-dependencies" class="md-nav__link">
+  <a href="#chunking-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optional Chunking Dependencies
+        Chunking Dependencies
       
     </span>
   </a>
@@ -1461,9 +1461,10 @@ finish even when individual files are broken.</p>
 <h2 id="validation-after-conversion">Validation After Conversion<a class="headerlink" href="#validation-after-conversion" title="Permanent link">&para;</a></h2>
 <p>FFmpeg success is not treated as enough. Converted output is reopened and
 checked for sample rate, channel count, readability, and minimum duration.</p>
-<h2 id="optional-chunking-dependencies">Optional Chunking Dependencies<a class="headerlink" href="#optional-chunking-dependencies" title="Permanent link">&para;</a></h2>
-<p>Chunking imports heavy dependencies lazily. Conversion-only users do not need
-Torch or Silero VAD installed.</p>
+<h2 id="chunking-dependencies">Chunking Dependencies<a class="headerlink" href="#chunking-dependencies" title="Permanent link">&para;</a></h2>
+<p>The base package includes Torch, Silero VAD, and tqdm so both <code>convert</code> and
+<code>chunk</code> are ready after <code>pip install audio-prep-pipeline</code>. Chunker imports are
+still lazy, so conversion-only commands avoid VAD startup cost.</p>
 
 
 

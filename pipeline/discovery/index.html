@@ -785,6 +785,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1370,6 +1381,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1427,8 +1449,19 @@ files = find_audio_files(Path(&quot;data/raw_mp3&quot;))</code></pre>
 can be decoded:</p>
 <pre><code>files = find_audio_files(Path("data/mixed"), extensions=None)</code></pre>
 
-<p>The CLI exposes the same behavior with <code>--extensions</code>. Use <code>--extensions all</code>
-to scan every regular file.</p>
+<h2 id="cli-example">CLI Example<a class="headerlink" href="#cli-example" title="Permanent link">&para;</a></h2>
+<p>The CLI exposes the same behavior with <code>--extensions</code>:</p>
+<pre><code>audio-prep convert \
+    --input-dir data/audio \
+    --output-dir data/wav16k \
+    --extensions mp3,m4a,ogg
+
+audio-prep chunk \
+    --input-dir data/mixed \
+    --output-dir data/chunks \
+    --extensions all</code></pre>
+
+<p>Use <code>--extensions all</code> to scan every regular file.</p>
 
 
 

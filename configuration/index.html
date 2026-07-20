@@ -1424,7 +1424,16 @@ flags for command-line use.</p>
 </tr>
 </tbody>
 </table>
-<p>Example:</p>
+<p>CLI:</p>
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/flac16k \
+    --format flac \
+    --sample-rate 16000 \
+    --channels 1 \
+    --workers 8</code></pre>
+
+<p>Python:</p>
 <pre><code>from audio_prep import ConversionConfig
 
 config = ConversionConfig(
@@ -1483,7 +1492,17 @@ config = ConversionConfig(
 </tr>
 </tbody>
 </table>
-<p>Example:</p>
+<p>CLI:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --format flac \
+    --sample-rate 16000 \
+    --min-duration-sec 5 \
+    --max-duration-sec 20 \
+    --workers 4</code></pre>
+
+<p>Python:</p>
 <pre><code>from audio_prep import ChunkConfig
 
 config = ChunkConfig(

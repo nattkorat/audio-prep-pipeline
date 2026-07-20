@@ -781,6 +781,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#output-path-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1349,6 +1371,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#output-path-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1419,6 +1463,37 @@
 
 <h1 id="conversion">Conversion<a class="headerlink" href="#conversion" title="Permanent link">&para;</a></h1>
 <p>Conversion is handled by FFmpeg through <code>convert_file</code> and <code>convert_batch</code>.</p>
+<h2 id="cli-example">CLI Example<a class="headerlink" href="#cli-example" title="Permanent link">&para;</a></h2>
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --format wav \
+    --sample-rate 16000 \
+    --channels 1 \
+    --workers 4 \
+    --manifest data/manifest.jsonl</code></pre>
+
+<h2 id="python-example">Python Example<a class="headerlink" href="#python-example" title="Permanent link">&para;</a></h2>
+<pre><code>from pathlib import Path
+
+from audio_prep import ConversionConfig, build_manifest, convert_batch, validate_output, write_manifest
+
+config = ConversionConfig(
+    output_format=&quot;wav&quot;,
+    sample_rate=16_000,
+    channels=1,
+    num_workers=4,
+)
+
+results = convert_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/wav16k&quot;), config)
+validations = {
+    result.output: validate_output(result.output, config)
+    for result in results
+    if result.success and result.output is not None
+}
+records = build_manifest(results, validations)
+write_manifest(records, Path(&quot;data/manifest.jsonl&quot;))</code></pre>
+
 <h2 id="output-path-rules">Output Path Rules<a class="headerlink" href="#output-path-rules" title="Permanent link">&para;</a></h2>
 <p>For batch conversion, the output path is derived from the source path relative
 to <code>input_dir</code>:</p>

@@ -859,6 +859,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#python-example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1360,6 +1371,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#python-example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1412,6 +1434,16 @@ reason.</p>
 <h2 id="duration-probing">Duration Probing<a class="headerlink" href="#duration-probing" title="Permanent link">&para;</a></h2>
 <p><code>probe_duration</code> uses FFprobe and can inspect formats that <code>soundfile</code> may not
 read directly, including MP3.</p>
+<h2 id="cli-example">CLI Example<a class="headerlink" href="#cli-example" title="Permanent link">&para;</a></h2>
+<p>Validation runs automatically after every successful conversion:</p>
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --sample-rate 16000 \
+    --channels 1 \
+    --min-duration-sec 0.5 \
+    --manifest data/manifest.jsonl</code></pre>
+
 <h2 id="python-example">Python Example<a class="headerlink" href="#python-example" title="Permanent link">&para;</a></h2>
 <pre><code>from pathlib import Path
 

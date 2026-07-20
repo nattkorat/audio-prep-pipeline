@@ -853,6 +853,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#python-example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1404,6 +1415,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cli-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#python-example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1465,10 +1487,21 @@ match the expected sample rate. Corrupt existing chunks are rewritten.</p>
 <p>If two source files in the same directory share a stem, such as <code>clip.mp3</code> and
 <code>clip.wav</code>, chunk outputs are written into disambiguated subdirectories such as
 <code>clip_mp3/</code> and <code>clip_wav/</code>.</p>
+<h2 id="cli-example">CLI Example<a class="headerlink" href="#cli-example" title="Permanent link">&para;</a></h2>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --format flac \
+    --sample-rate 16000 \
+    --min-duration-sec 5 \
+    --max-duration-sec 20 \
+    --workers 4 \
+    --manifest data/chunk_manifest.jsonl</code></pre>
+
 <h2 id="python-example">Python Example<a class="headerlink" href="#python-example" title="Permanent link">&para;</a></h2>
 <pre><code>from pathlib import Path
 
-from audio_prep import ChunkConfig, chunk_batch
+from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
 config = ChunkConfig(
     min_duration_sec=5,
@@ -1482,7 +1515,9 @@ results = chunk_batch(
     Path(&quot;data/raw_mp3&quot;),
     Path(&quot;data/chunks&quot;),
     config,
-)</code></pre>
+)
+records = build_chunk_manifest(results)
+write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
 
 
 
