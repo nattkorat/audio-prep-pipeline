@@ -1,6 +1,7 @@
 site_name: Audio Prep Pipeline
 site_description: Audio preprocessing pipeline for self-supervised speech pretraining
 site_author: IDRI Lab
+site_url: https://nattkorat.github.io/audio-prep-pipeline/
 
 repo_url: https://github.com/nattkorat/audio-prep-pipeline
 repo_name: nattkorat/audio-prep-pipeline
@@ -25,6 +26,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - PyPI: https://pypi.org/project/audio-prep-pipeline/
 
   - User Guide:
       - Getting Started: getting-started.md

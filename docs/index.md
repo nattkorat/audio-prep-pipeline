@@ -65,3 +65,8 @@ For speech chunking:
 - [Installation](installation.md)
 - [CLI Reference](cli.md)
 - [Pipeline Overview](pipeline/overview.md)
+
+## Project Links
+
+- [PyPI package](https://pypi.org/project/audio-prep-pipeline/)
+- [GitHub repository](https://github.com/nattkorat/audio-prep-pipeline)
