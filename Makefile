@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test check clean
+.PHONY: install lint format typecheck test docs docs-serve check clean
 
 install:
 	pip install -e ".[dev]"
@@ -16,6 +16,12 @@ typecheck:
 
 test:
 	pytest
+
+docs:
+	mkdocs build --strict
+
+docs-serve:
+	mkdocs serve
 
 # Everything CI runs, in one command -- run this before opening a PR.
 check: lint typecheck test

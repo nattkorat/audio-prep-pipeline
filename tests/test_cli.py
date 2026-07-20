@@ -42,11 +42,11 @@ def test_cli_convert_end_to_end_writes_manifest(source_corpus: Path, tmp_path: P
 
 
 def test_cli_convert_succeeds_cleanly_on_valid_only_input(tmp_path: Path) -> None:
-    from tests.conftest import make_sine_mp3
+    from tests.conftest import make_sine_audio, make_sine_mp3
 
     input_dir = tmp_path / "raw"
     make_sine_mp3(input_dir / "a.mp3", duration=1.0)
-    make_sine_mp3(input_dir / "b.mp3", duration=1.0)
+    make_sine_audio(input_dir / "b.wav", duration=1.0)
 
     exit_code = main(
         [
@@ -61,6 +61,61 @@ def test_cli_convert_succeeds_cleanly_on_valid_only_input(tmp_path: Path) -> Non
     )
 
     assert exit_code == 0
+
+
+def test_cli_convert_extensions_filter_limits_discovery(tmp_path: Path) -> None:
+    from tests.conftest import make_sine_audio, make_sine_mp3
+
+    input_dir = tmp_path / "raw"
+    make_sine_mp3(input_dir / "a.mp3", duration=1.0)
+    make_sine_audio(input_dir / "b.wav", duration=1.0)
+
+    exit_code = main(
+        [
+            "convert",
+            "--input-dir",
+            str(input_dir),
+            "--output-dir",
+            str(tmp_path / "out"),
+            "--extensions",
+            "wav",
+            "--workers",
+            "1",
+        ]
+    )
+
+    assert exit_code == 0
+    assert not (tmp_path / "out" / "a.wav").exists()
+    assert (tmp_path / "out" / "b.wav").exists()
+
+
+def test_cli_convert_extensions_all_lets_ffmpeg_report_bad_files(tmp_path: Path) -> None:
+    from tests.conftest import make_sine_audio
+
+    input_dir = tmp_path / "raw"
+    make_sine_audio(input_dir / "clip.wav", duration=1.0)
+    (input_dir / "notes.txt").write_text("not audio")
+    manifest_path = tmp_path / "manifest.jsonl"
+
+    exit_code = main(
+        [
+            "convert",
+            "--input-dir",
+            str(input_dir),
+            "--output-dir",
+            str(tmp_path / "out"),
+            "--extensions",
+            "all",
+            "--workers",
+            "1",
+            "--manifest",
+            str(manifest_path),
+        ]
+    )
+
+    assert exit_code == 1
+    statuses = [json.loads(line)["status"] for line in manifest_path.read_text().splitlines()]
+    assert statuses == ["ok", "conversion_failed"]
 
 
 def test_cli_rejects_unsupported_format(tmp_path: Path) -> None:
@@ -109,6 +164,8 @@ class TestCliChunk:
                 "1",
                 "--max-duration-sec",
                 "4",
+                "--workers",
+                "1",
             ]
         )
 
@@ -116,6 +173,31 @@ class TestCliChunk:
         output_dir = input_dir / "chunks"
         chunks = sorted(output_dir.glob("clip_chunk_*.wav"))
         assert len(chunks) == 3
+
+    def test_chunk_command_accepts_non_mp3_source_extensions(self, tmp_path: Path) -> None:
+        from tests.conftest import make_sine_audio
+
+        input_dir = tmp_path / "raw"
+        make_sine_audio(input_dir / "clip.wav", duration=3.0)
+
+        exit_code = main(
+            [
+                "chunk",
+                "--input-dir",
+                str(input_dir),
+                "--extensions",
+                "wav",
+                "--min-duration-sec",
+                "1",
+                "--max-duration-sec",
+                "3",
+                "--workers",
+                "1",
+            ]
+        )
+
+        assert exit_code == 0
+        assert list((input_dir / "chunks").glob("clip_chunk_*.wav"))
 
     def test_chunk_command_respects_custom_output_dir(self, tmp_path: Path) -> None:
         from tests.conftest import make_sine_mp3
@@ -135,6 +217,8 @@ class TestCliChunk:
                 "1",
                 "--max-duration-sec",
                 "2",
+                "--workers",
+                "1",
             ]
         )
 
@@ -156,6 +240,8 @@ class TestCliChunk:
                 "5",
                 "--max-duration-sec",
                 "20",
+                "--workers",
+                "1",
             ]
         )
 
@@ -178,6 +264,8 @@ class TestCliChunk:
                 "1",
                 "--max-duration-sec",
                 "4",
+                "--workers",
+                "1",
                 "--manifest",
                 str(manifest_path),
             ]

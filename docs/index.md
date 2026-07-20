@@ -1,40 +1,67 @@
 # Audio Prep Pipeline
 
-Welcome to the Audio Prep Pipeline documentation.
+`audio-prep` converts source audio into pretraining-ready WAV or FLAC files and
+can optionally split speech into VAD-based chunks. It is designed for dataset
+preparation before self-supervised speech pretraining workflows such as
+Wav2Vec2 and XLS-R.
 
-This project converts raw audio recordings into datasets ready for
-self-supervised speech pretraining such as Wav2Vec2 and XLS-R.
+Default converted output:
 
-The pipeline performs four major stages:
+| Setting | Default |
+|---|---:|
+| Format | WAV |
+| Sample rate | 16 kHz |
+| Channels | 1, mono |
 
-1. Audio discovery
-2. Audio conversion
-3. Validation
-4. Manifest generation
+## What It Does
 
-The default output is:
+The conversion pipeline:
 
-- WAV
-- 16 kHz
-- Mono
+1. Recursively discovers supported source audio files.
+2. Converts audio with FFmpeg.
+3. Validates output with `soundfile`.
+4. Writes an optional JSONL manifest.
 
-which matches the expected input specification of most modern SSL speech
-models.
+The chunking pipeline:
 
-## Pipeline Overview
+1. Recursively discovers supported source audio files.
+2. Decodes audio with FFmpeg.
+3. Detects speech with Silero VAD, or an optional energy fallback.
+4. Writes speech-only WAV or FLAC chunks.
+5. Writes an optional JSONL chunk manifest.
+
+## Why This Exists
+
+Large audio corpora often contain corrupt files, inconsistent sample rates,
+wrong channel layouts, very short clips, and silence-heavy recordings. This
+project keeps those problems visible by returning per-file results instead of
+aborting entire batch jobs, and by validating generated files before they are
+handed to training code.
+
+## Quick Example
+
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --format wav \
+    --sample-rate 16000 \
+    --workers 8 \
+    --manifest data/manifest.jsonl</code></pre>
 
 
-`Raw MP3` -> `Find audio files` -> `Convert using FFmpeg` -> `Validate output`-> `Generate JSONL manifest` -> `Ready for pretraining`
+For speech chunking:
+
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks \
+    --min-duration-sec 5 \
+    --max-duration-sec 20 \
+    --manifest data/chunk_manifest.jsonl</code></pre>
 
 
-## Features
-- Multi-process conversion
-- Automatic validation
-- FFmpeg backend
-- JSONL manifest generation
-- Failure recovery
-- Modular Python API
-- CLI interface
-- Unit tested\
+## Start Here
 
-> [Getting Started](getting-started.md) <
+- [Getting Started](getting-started.md)
+- [Installation](installation.md)
+- [CLI Reference](cli.md)
+- [Pipeline Overview](pipeline/overview.md)

@@ -1,11 +1,11 @@
 """Voice-activity-based speech chunking (Silero VAD).
 
-Ported from the ASR pretraining-data-prep pipeline. Splits a source MP3
+Ported from the ASR pretraining-data-prep pipeline. Splits source audio
 into speech-only chunks bounded by a [min, max] duration window, so
 silence-heavy source recordings don't waste pretraining compute.
 Decoding (and resampling, via `ChunkConfig.sample_rate`) is done with
 ffmpeg, the same as `converter.py`, so it doesn't depend on `soundfile`
-being built with MP3 support.
+being built with support for every source container.
 
 Silero VAD pulls in `torch` (and optionally the `silero-vad` package),
 which are heavy compared to the rest of this project's footprint. Those
@@ -22,6 +22,7 @@ import logging
 import os
 import subprocess
 import tempfile
+from collections import Counter
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -43,6 +44,7 @@ _vad_detector_cache: Callable[..., Any] | None = None
 
 class ChunkingError(AudioPrepError):
     """Raised when VAD chunking fails to produce usable output."""
+
     def __init__(self, source: str, reason: str) -> None:
         self.source = source
         self.reason = reason
@@ -96,12 +98,13 @@ class ChunkResult:
 
 
 def _load_vad_from_package() -> tuple[Any, Callable[..., Any]]:
-    
     from silero_vad import get_speech_timestamps, load_silero_vad
+
     model = load_silero_vad()
 
     def detect(audio: Any, sampling_rate: int) -> Any:
         return get_speech_timestamps(audio, model, sampling_rate=sampling_rate)
+
     return model, detect
 
 
@@ -382,8 +385,9 @@ def chunk_batch(
     output_dir: Path,
     config: ChunkConfig | None = None,
     source_files: list[Path] | None = None,
+    extensions: tuple[str, ...] | None = None,
 ) -> list[ChunkResult]:
-    """Chunk every MP3 file under `input_dir` directly (no separate `convert` step needed).
+    """Chunk source audio under `input_dir` directly (no separate `convert` step needed).
 
     Mirrors the input directory's relative subfolder structure, same as
     `converter.convert_batch`. The VAD model is loaded once up front (and
@@ -391,20 +395,24 @@ def chunk_batch(
 
     Pass `source_files` to chunk a pre-filtered list instead of
     re-discovering files under `input_dir` (useful for tests, and for
-    chunking non-MP3 files -- `chunk_file` itself doesn't care about
-    source extension, it just decodes whatever path it's given).
+    unusual source formats -- `chunk_file` itself doesn't care about source
+    extension, it just decodes whatever path it's given). Pass
+    `extensions=None` to use the converter module's default source extension
+    set; pass `source_files` for exact control.
     """
     config = config or ChunkConfig()
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
 
     if source_files is None:
-        from audio_prep.converter import find_audio_files
+        from audio_prep.converter import DEFAULT_SOURCE_EXTENSIONS, find_audio_files
 
-        source_files = find_audio_files(input_dir)
+        source_files = find_audio_files(
+            input_dir, DEFAULT_SOURCE_EXTENSIONS if extensions is None else extensions
+        )
 
     if not source_files:
-        logger.warning("No MP3 source files found under %s", input_dir)
+        logger.warning("No source audio files found under %s", input_dir)
         return []
 
     # Warm the cache in the parent process so a sequential run (and each
@@ -419,6 +427,17 @@ def chunk_batch(
     for f in source_files:
         rel_dir = f.parent.relative_to(input_dir) if f.is_relative_to(input_dir) else Path()
         jobs.append((f, output_dir / rel_dir))
+
+    chunk_keys = Counter((dst, src.stem) for src, dst in jobs)
+    jobs = [
+        (
+            src,
+            dst / f"{src.stem}_{src.suffix.lower().lstrip('.') or 'no_ext'}"
+            if chunk_keys[(dst, src.stem)] > 1
+            else dst,
+        )
+        for src, dst in jobs
+    ]
 
     if config.num_workers == 1:
         return [

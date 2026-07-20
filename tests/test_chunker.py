@@ -379,11 +379,32 @@ class TestChunkBatch:
         results = chunk_batch(input_dir, tmp_path / "out", ChunkConfig())
         assert results == []
 
-    def test_ignores_non_mp3_files_during_discovery(self, tmp_path: Path) -> None:
+    def test_discovers_supported_non_mp3_files_by_default(self, tmp_path: Path) -> None:
         input_dir = tmp_path / "raw"
-        make_sine_wav(input_dir / "not_scanned.wav", duration=3.0)
-        results = chunk_batch(input_dir, tmp_path / "out", ChunkConfig())
-        assert results == []
+        make_sine_wav(input_dir / "scanned.wav", duration=3.0)
+        results = chunk_batch(
+            input_dir,
+            tmp_path / "out",
+            ChunkConfig(min_duration_sec=1, max_duration_sec=3),
+        )
+        assert len(results) == 1
+        assert results[0].success
+
+    def test_same_stem_different_source_formats_do_not_collide(self, tmp_path: Path) -> None:
+        from tests.conftest import make_sine_mp3
+
+        input_dir = tmp_path / "raw"
+        make_sine_mp3(input_dir / "clip.mp3", duration=3.0)
+        make_sine_wav(input_dir / "clip.wav", duration=3.0)
+        output_dir = tmp_path / "out"
+        config = ChunkConfig(min_duration_sec=1, max_duration_sec=3)
+
+        results = chunk_batch(input_dir, output_dir, config)
+
+        assert len(results) == 2
+        assert all(r.success for r in results)
+        assert (output_dir / "clip_mp3" / "clip_chunk_1.wav").exists()
+        assert (output_dir / "clip_wav" / "clip_chunk_1.wav").exists()
 
     def test_accepts_preselected_source_files(self, tmp_path: Path) -> None:
         input_dir = tmp_path / "converted"
