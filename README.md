@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/nattkorat/audio-prep-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nattkorat/audio-prep-pipeline/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/audio-prep-pipeline.svg)](https://pypi.org/project/audio-prep-pipeline/)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://nattkorat.github.io/audio-prep-pipeline/)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-46a2f1)

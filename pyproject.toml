@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "audio-prep-pipeline"
-version = "0.1.0"
+version = "0.1.1"
 description = "Convert raw MP3 audio into pretraining-ready WAV/FLAC, with validation and dataset manifest output."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -37,7 +37,7 @@ audio-prep = "audio_prep.cli:main"
 Homepage = "https://github.com/nattkorat/audio-prep-pipeline"
 Repository = "https://github.com/nattkorat/audio-prep-pipeline"
 Issues = "https://github.com/nattkorat/audio-prep-pipeline/issues"
-Documentation = "https://github.com/nattkorat/audio-prep-pipeline/tree/main/docs"
+Documentation = "https://nattkorat.github.io/audio-prep-pipeline/"
 
 [project.optional-dependencies]
 dev = [

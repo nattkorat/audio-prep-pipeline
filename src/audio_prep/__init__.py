@@ -22,7 +22,7 @@ from audio_prep.exceptions import AudioPrepError, ConversionError, ProbeError
 from audio_prep.manifest import ManifestRecord, build_manifest
 from audio_prep.validator import ValidationResult, validate_output
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "ConversionConfig",
