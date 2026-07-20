@@ -23,14 +23,15 @@ import os
 import subprocess
 import tempfile
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar, cast
 
 import numpy as np
 import soundfile as sf
+from numpy.typing import NDArray
 
 from audio_prep.exceptions import AudioPrepError
 
@@ -40,6 +41,7 @@ SUPPORTED_CHUNK_FORMATS = ("wav", "flac")
 
 _vad_model_cache: Any = None
 _vad_detector_cache: Callable[..., Any] | None = None
+_T = TypeVar("_T")
 
 
 class ChunkingError(AudioPrepError):
@@ -111,8 +113,11 @@ def _load_vad_from_package() -> tuple[Any, Callable[..., Any]]:
 def _load_vad_from_torch_hub() -> tuple[Any, Callable[..., Any]]:
     import torch
 
+    torch.hub.set_dir(os.path.expanduser("~/.cache/torch/hub"))
+
     with torch.no_grad():
-        model, utils = torch.hub.load(  # type: ignore[no-untyped-call]
+        hub_load: Callable[..., Any] = torch.hub.load
+        model, utils = hub_load(
             repo_or_dir="snakers4/silero-vad",
             model="silero_vad",
             trust_repo=True,
@@ -127,7 +132,15 @@ def _load_vad_from_torch_hub() -> tuple[Any, Callable[..., Any]]:
     return model, detect
 
 
-def _energy_based_detector(audio: np.ndarray, sampling_rate: int) -> list[dict[str, int]]:
+def _with_progress(iterable: Iterable[_T], **kwargs: Any) -> Iterable[_T]:
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        return iterable
+    return cast(Iterable[_T], tqdm(iterable, **kwargs))
+
+
+def _energy_based_detector(audio: NDArray[Any], sampling_rate: int) -> list[dict[str, int]]:
     """Simple RMS-energy VAD fallback for environments without Silero access.
 
     Lower quality than Silero -- only intended as a last resort so a
@@ -179,10 +192,6 @@ def load_vad_model(allow_energy_fallback: bool = False) -> tuple[Any, Callable[.
     if _vad_detector_cache is not None:
         return _vad_model_cache, _vad_detector_cache
 
-    import torch
-
-    torch.hub.set_dir(os.path.expanduser("~/.cache/torch/hub"))
-
     errors = []
     model: Any = None
     detect: Callable[..., Any] | None = None
@@ -215,7 +224,7 @@ def load_vad_model(allow_energy_fallback: bool = False) -> tuple[Any, Callable[.
 
 
 def chunk_audio_with_vad(
-    audio: np.ndarray,
+    audio: NDArray[Any],
     sr: int,
     config: ChunkConfig | None = None,
     detect: Callable[..., Any] | None = None,
@@ -266,7 +275,7 @@ def chunk_audio_with_vad(
 _SOUNDFILE_NATIVE_EXTENSIONS = {".wav", ".flac"}
 
 
-def _decode_via_ffmpeg(source: Path, target_sr: int | None) -> tuple[np.ndarray, int]:
+def _decode_via_ffmpeg(source: Path, target_sr: int | None) -> tuple[NDArray[Any], int]:
     """Decode `source` (mono) via ffmpeg, resampling to `target_sr` if given.
 
     Reuses ffmpeg rather than a pure-Python decoder/resampler for the same
@@ -292,7 +301,7 @@ def _decode_via_ffmpeg(source: Path, target_sr: int | None) -> tuple[np.ndarray,
         tmp_path.unlink(missing_ok=True)
 
 
-def _read_audio_for_chunking(source: Path, target_sr: int | None) -> tuple[np.ndarray, int]:
+def _read_audio_for_chunking(source: Path, target_sr: int | None) -> tuple[NDArray[Any], int]:
     """Read `source`, decoding/resampling via ffmpeg where needed.
 
     Only reads directly through `soundfile` (skipping the ffmpeg
@@ -421,8 +430,6 @@ def chunk_batch(
     # before any progress bar work, with its exact underlying error.
     load_vad_model(allow_energy_fallback=config.allow_energy_fallback)
 
-    from tqdm import tqdm
-
     jobs = []
     for f in source_files:
         rel_dir = f.parent.relative_to(input_dir) if f.is_relative_to(input_dir) else Path()
@@ -441,13 +448,16 @@ def chunk_batch(
 
     if config.num_workers == 1:
         return [
-            chunk_file(src, dst, config) for src, dst in tqdm(jobs, desc="Chunking", unit="file")
+            chunk_file(src, dst, config)
+            for src, dst in _with_progress(jobs, desc="Chunking", unit="file")
         ]
 
     results: list[ChunkResult] = []
     with ProcessPoolExecutor(max_workers=config.num_workers) as pool:
         futures = {pool.submit(chunk_file, src, dst, config): src for src, dst in jobs}
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Chunking", unit="file"):
+        for future in _with_progress(
+            as_completed(futures), total=len(futures), desc="Chunking", unit="file"
+        ):
             results.append(future.result())
 
     order = {src: i for i, (src, _dst) in enumerate(jobs)}
