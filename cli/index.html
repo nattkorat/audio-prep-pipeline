@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -846,6 +846,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../pipeline/profiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../pipeline/validation/" class="md-nav__link">
         
   
@@ -1216,6 +1244,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/profiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/validator/" class="md-nav__link">
         
   
@@ -1393,7 +1449,8 @@
     --channels 1 \
     --workers 4 \
     --min-duration-sec 0.5 \
-    --manifest data/manifest.jsonl</code></pre>
+    --manifest data/manifest.jsonl \
+    --profile profiles/convert.json</code></pre>
 
 <table>
 <thead>
@@ -1459,6 +1516,11 @@
 <td style="text-align: right;">none</td>
 <td>Path to write conversion manifest JSONL.</td>
 </tr>
+<tr>
+<td><code>--profile</code></td>
+<td style="text-align: right;">none</td>
+<td>Path to write a JSON profile with wall time, CPU time, and peak RSS.</td>
+</tr>
 </tbody>
 </table>
 <p>Exit codes:</p>
@@ -1493,7 +1555,17 @@
     --min-duration-sec 5 \
     --max-duration-sec 20 \
     --workers 4 \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
+
+<p>Compare with Pyannote:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --hf-token "$HF_TOKEN" \
+    --profile profiles/chunk-pyannote.json</code></pre>
 
 <table>
 <thead>
@@ -1550,14 +1622,34 @@
 <td>Rebuild even when an existing chunk is valid.</td>
 </tr>
 <tr>
+<td><code>--vad-backend</code></td>
+<td style="text-align: right;"><code>silero</code></td>
+<td>Speech detector backend: <code>silero</code>, <code>pyannote</code>, or <code>energy</code>.</td>
+</tr>
+<tr>
+<td><code>--pyannote-model</code></td>
+<td style="text-align: right;"><code>pyannote/voice-activity-detection</code></td>
+<td>Hugging Face model id used with <code>--vad-backend pyannote</code>.</td>
+</tr>
+<tr>
+<td><code>--hf-token</code></td>
+<td style="text-align: right;">none</td>
+<td>Hugging Face token for gated Pyannote models. Falls back to <code>HF_TOKEN</code> or <code>HUGGINGFACE_TOKEN</code>.</td>
+</tr>
+<tr>
 <td><code>--allow-energy-fallback</code></td>
 <td style="text-align: right;">off</td>
-<td>Use a lower-quality energy detector if Silero cannot load.</td>
+<td>Use a lower-quality energy detector if the selected VAD backend cannot load.</td>
 </tr>
 <tr>
 <td><code>--manifest</code></td>
 <td style="text-align: right;">none</td>
 <td>Path to write chunk manifest JSONL.</td>
+</tr>
+<tr>
+<td><code>--profile</code></td>
+<td style="text-align: right;">none</td>
+<td>Path to write a JSON profile with wall time, CPU time, and peak RSS.</td>
 </tr>
 </tbody>
 </table>
@@ -1636,7 +1728,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

@@ -18,14 +18,14 @@
         <link rel="prev" href="../conversion/">
       
       
-        <link rel="next" href="../validation/">
+        <link rel="next" href="../profiling/">
       
       
         
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -890,6 +890,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../profiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../validation/" class="md-nav__link">
         
   
@@ -1260,6 +1288,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/profiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/validator/" class="md-nav__link">
         
   
@@ -1465,11 +1521,15 @@
 <p>Chunking splits source audio into speech-only chunks. It is implemented in
 <code>audio_prep.chunker</code> and exposed through <code>audio-prep chunk</code>.</p>
 <h2 id="detector">Detector<a class="headerlink" href="#detector" title="Permanent link">&para;</a></h2>
-<p>The preferred detector is Silero VAD. The project tries to load Silero from the
+<p>The default detector is Silero VAD. The project tries to load Silero from the
 installed <code>silero-vad</code> package first, then from <code>torch.hub</code>.</p>
-<p>If Silero is unavailable and <code>allow_energy_fallback=True</code>, chunking uses a
-simple energy-based detector. This fallback is useful for offline testing but is
-lower quality than Silero.</p>
+<p>Pyannote is also available for comparison by setting <code>vad_backend="pyannote"</code> in
+Python or <code>--vad-backend pyannote</code> in the CLI. Some Pyannote models require a
+Hugging Face token and accepted model terms, so pass <code>--hf-token</code> or set
+<code>HF_TOKEN</code>/<code>HUGGINGFACE_TOKEN</code> when needed.</p>
+<p>If the selected detector is unavailable and <code>allow_energy_fallback=True</code>,
+chunking uses a simple energy-based detector. This fallback is useful for
+offline testing but is lower quality than model-based VAD.</p>
 <h2 id="decode-and-resample">Decode And Resample<a class="headerlink" href="#decode-and-resample" title="Permanent link">&para;</a></h2>
 <p>Compressed/container sources are decoded through FFmpeg. WAV and FLAC files may
 be read directly with <code>soundfile</code> when no resampling is needed.</p>
@@ -1496,7 +1556,18 @@ match the expected sample rate. Corrupt existing chunks are rewritten.</p>
     --min-duration-sec 5 \
     --max-duration-sec 20 \
     --workers 4 \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
+
+<p>Pyannote comparison:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --sample-rate 16000 \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --hf-token "$HF_TOKEN" \
+    --profile profiles/chunk-pyannote.json</code></pre>
 
 <h2 id="python-example">Python Example<a class="headerlink" href="#python-example" title="Permanent link">&para;</a></h2>
 <pre><code>from pathlib import Path
@@ -1509,6 +1580,7 @@ config = ChunkConfig(
     output_format=&quot;flac&quot;,
     sample_rate=16_000,
     num_workers=4,
+    vad_backend=&quot;silero&quot;,
 )
 
 results = chunk_batch(
@@ -1518,6 +1590,30 @@ results = chunk_batch(
 )
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
+
+<p>Pyannote comparison from Python:</p>
+<pre><code>from pathlib import Path
+
+from audio_prep import ChunkConfig, Profiler, chunk_batch
+
+profiler = Profiler()
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    sample_rate=16_000,
+    num_workers=1,
+    vad_backend=&quot;pyannote&quot;,
+    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+)
+
+with profiler.measure(&quot;chunk-pyannote&quot;, {&quot;vad_backend&quot;: config.vad_backend}):
+    results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks-pyannote&quot;), config)
+
+profiler.write_json(
+    Path(&quot;profiles/chunk-pyannote.json&quot;),
+    operation=&quot;chunk&quot;,
+    metadata={&quot;files&quot;: len(results), &quot;vad_backend&quot;: config.vad_backend},
+)</code></pre>
 
 
 
@@ -1570,7 +1666,7 @@ write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

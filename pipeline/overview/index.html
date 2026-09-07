@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -868,6 +868,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../profiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../validation/" class="md-nav__link">
         
   
@@ -1238,6 +1266,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/profiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/validator/" class="md-nav__link">
         
   
@@ -1448,12 +1504,15 @@ chosen output directory.</p>
 <pre><code>audio-prep convert \
     --input-dir data/raw_mp3 \
     --output-dir data/wav16k \
-    --manifest data/manifest.jsonl
+    --manifest data/manifest.jsonl \
+    --profile profiles/convert.json
 
 audio-prep chunk \
     --input-dir data/raw_mp3 \
     --output-dir data/chunks \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --vad-backend silero \
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
 
 <p>Or call the same pipeline functions from Python:</p>
 <pre><code>from pathlib import Path
@@ -1469,7 +1528,7 @@ converted = convert_batch(
 chunks = chunk_batch(
     Path(&quot;data/raw_mp3&quot;),
     Path(&quot;data/chunks&quot;),
-    ChunkConfig(),
+    ChunkConfig(vad_backend=&quot;silero&quot;),
 )</code></pre>
 
 
@@ -1523,7 +1582,7 @@ chunks = chunk_batch(
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

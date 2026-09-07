@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -846,6 +846,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../pipeline/profiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../pipeline/validation/" class="md-nav__link">
         
   
@@ -1216,6 +1244,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/profiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/validator/" class="md-nav__link">
         
   
@@ -1488,7 +1544,22 @@ config = ConversionConfig(
 <tr>
 <td><code>allow_energy_fallback</code></td>
 <td style="text-align: right;"><code>False</code></td>
-<td>Use the energy detector if Silero cannot load.</td>
+<td>Use the energy detector if the selected VAD cannot load.</td>
+</tr>
+<tr>
+<td><code>vad_backend</code></td>
+<td style="text-align: right;"><code>silero</code></td>
+<td>Speech detector backend: <code>silero</code>, <code>pyannote</code>, or <code>energy</code>.</td>
+</tr>
+<tr>
+<td><code>pyannote_model</code></td>
+<td style="text-align: right;"><code>pyannote/voice-activity-detection</code></td>
+<td>Hugging Face model id used with <code>vad_backend=&amp;quot;pyannote&amp;quot;</code>.</td>
+</tr>
+<tr>
+<td><code>hf_token</code></td>
+<td style="text-align: right;"><code>None</code></td>
+<td>Hugging Face token for gated Pyannote models. Falls back to <code>HF_TOKEN</code> or <code>HUGGINGFACE_TOKEN</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -1500,7 +1571,9 @@ config = ConversionConfig(
     --sample-rate 16000 \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
-    --workers 4</code></pre>
+    --workers 4 \
+    --vad-backend silero \
+    --profile profiles/chunk-silero.json</code></pre>
 
 <p>Python:</p>
 <pre><code>from audio_prep import ChunkConfig
@@ -1511,10 +1584,28 @@ config = ChunkConfig(
     output_format=&quot;flac&quot;,
     sample_rate=16_000,
     num_workers=4,
+    vad_backend=&quot;silero&quot;,
 )</code></pre>
 
 <p>The CLI sets <code>--sample-rate 16000</code> for chunking by default. The Python API
 default is <code>None</code>, which preserves the source sample rate.</p>
+<p>Pyannote comparison:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --hf-token "$HF_TOKEN" \
+    --profile profiles/chunk-pyannote.json</code></pre>
+
+<p>Python:</p>
+<pre><code>from audio_prep import ChunkConfig
+
+config = ChunkConfig(
+    sample_rate=16_000,
+    vad_backend=&quot;pyannote&quot;,
+    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+)</code></pre>
 
 
 
@@ -1567,7 +1658,7 @@ default is <code>None</code>, which preserves the source sample rate.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

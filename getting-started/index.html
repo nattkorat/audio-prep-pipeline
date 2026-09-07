@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -879,6 +879,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../pipeline/profiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../pipeline/validation/" class="md-nav__link">
         
   
@@ -1249,6 +1277,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/profiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/validator/" class="md-nav__link">
         
   
@@ -1504,7 +1560,8 @@ status:</p>
 <pre><code>audio-prep convert \
     --input-dir data/raw_mp3 \
     --output-dir data/wav16k \
-    --manifest data/manifest.jsonl</code></pre>
+    --manifest data/manifest.jsonl \
+    --profile profiles/convert.json</code></pre>
 
 <p>Python:</p>
 <pre><code>from pathlib import Path
@@ -1529,17 +1586,27 @@ downstream model expects a different audio spec.</p>
     --output-dir data/chunks \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --vad-backend silero \
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
 
 <p>Python chunking:</p>
 <pre><code>from pathlib import Path
 
 from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
-config = ChunkConfig(min_duration_sec=5, max_duration_sec=20)
+config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, vad_backend=&quot;silero&quot;)
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
+
+<p>Pyannote comparison:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --profile profiles/chunk-pyannote.json</code></pre>
 
 <h2 id="resume-behavior">Resume Behavior<a class="headerlink" href="#resume-behavior" title="Permanent link">&para;</a></h2>
 <p>With <code>--overwrite</code> off, conversion skips an existing output only when it passes
@@ -1599,7 +1666,7 @@ outputs.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

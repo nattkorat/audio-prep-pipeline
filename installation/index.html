@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -868,6 +868,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../pipeline/profiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../pipeline/validation/" class="md-nav__link">
         
   
@@ -1238,6 +1266,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/profiler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Profiler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/validator/" class="md-nav__link">
         
   
@@ -1458,13 +1514,16 @@ pre-commit install</code></pre>
 <pre><code>pip install -e &quot;.[docs]&quot;</code></pre>
 
 <h2 id="chunking-dependencies">Chunking Dependencies<a class="headerlink" href="#chunking-dependencies" title="Permanent link">&para;</a></h2>
-<p>The standard package install includes <code>torch</code>, <code>silero-vad</code>, and <code>tqdm</code>, so
-both <code>audio-prep convert</code> and <code>audio-prep chunk</code> are ready after:</p>
+<p>The standard package install includes <code>torch</code>, <code>silero-vad</code>, <code>pyannote-audio</code>,
+and <code>tqdm</code>, so both <code>audio-prep convert</code> and <code>audio-prep chunk</code> are ready after:</p>
 <pre><code>pip install audio-prep-pipeline</code></pre>
 
-<p>The first chunking run loads Silero from the installed <code>silero-vad</code> package.
-If Silero cannot load in an offline environment, pass <code>--allow-energy-fallback</code>
-to use the lower-quality offline energy detector.</p>
+<p>The first chunking run loads Silero from the installed <code>silero-vad</code> package by
+default. Use <code>--vad-backend pyannote</code> to compare with a Pyannote model. Some
+Pyannote models require a Hugging Face token and accepted model terms; pass
+<code>--hf-token</code> or set <code>HF_TOKEN</code>/<code>HUGGINGFACE_TOKEN</code>.</p>
+<p>If the selected VAD backend cannot load in an offline environment, pass
+<code>--allow-energy-fallback</code> to use the lower-quality offline energy detector.</p>
 
 
 
@@ -1517,7 +1576,7 @@ to use the lower-quality offline energy detector.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

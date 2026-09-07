@@ -12,28 +12,28 @@
         <meta name="author" content="IDRI Lab">
       
       
-        <link rel="canonical" href="https://nattkorat.github.io/audio-prep-pipeline/architecture/">
+        <link rel="canonical" href="https://nattkorat.github.io/audio-prep-pipeline/pipeline/profiling/">
       
       
-        <link rel="prev" href="../pipeline/manifest/">
+        <link rel="prev" href="../chunking/">
       
       
-        <link rel="next" href="../development/contributing/">
+        <link rel="next" href="../validation/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Architecture - Audio Prep Pipeline</title>
+        <title>Profiling - Audio Prep Pipeline</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -52,7 +52,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture" class="md-skip">
+        <a href="#profiling" class="md-skip">
           Skip to content
         </a>
       
@@ -84,7 +84,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Audio Prep Pipeline" class="md-header__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
+    <a href="../.." title="Audio Prep Pipeline" class="md-header__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture
+              Profiling
             
           </span>
         </div>
@@ -189,7 +189,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -229,31 +229,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../getting-started/" class="md-tabs__link">
+        <a href="../../getting-started/" class="md-tabs__link">
           
   
   
   User Guide
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../pipeline/overview/" class="md-tabs__link">
-          
-  
-  
-  Pipeline
 
         </a>
       </li>
@@ -271,7 +251,27 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../overview/" class="md-tabs__link">
+          
+  
+  
+  Pipeline
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
           
   
   
@@ -291,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../api/config/" class="md-tabs__link">
+        <a href="../../api/config/" class="md-tabs__link">
           
   
   
@@ -325,7 +325,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Audio Prep Pipeline" class="md-nav__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
+    <a href="../.." title="Audio Prep Pipeline" class="md-nav__button md-logo" aria-label="Audio Prep Pipeline" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -355,7 +355,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -461,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -489,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         
   
   
@@ -517,7 +517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -545,7 +545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+      <a href="../../cli/" class="md-nav__link">
         
   
   
@@ -573,7 +573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -581,261 +581,6 @@
     
   
     Configuration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Pipeline
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Pipeline
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pipeline/overview/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pipeline/discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pipeline/conversion/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Conversion
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pipeline/chunking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Chunking
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pipeline/profiling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Profiling
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pipeline/validation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Validation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pipeline/manifest/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Manifest
   
 
     
@@ -881,17 +626,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Developer Guide
+    Pipeline
   
 
     
@@ -902,16 +647,128 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Developer Guide
+    Pipeline
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conversion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conversion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../chunking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chunking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -936,7 +793,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Profiling
   
 
     
@@ -954,7 +811,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Profiling
   
 
     
@@ -980,10 +837,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#design-choices" class="md-nav__link">
+  <a href="#cli-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Design Choices
+        CLI Example
       
     </span>
   </a>
@@ -991,10 +848,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ffmpeg-for-decode-and-encode" class="md-nav__link">
+  <a href="#python-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FFmpeg For Decode And Encode
+        Python Example
       
     </span>
   </a>
@@ -1002,43 +859,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#result-objects-instead-of-batch-exceptions" class="md-nav__link">
+  <a href="#report-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Result Objects Instead Of Batch Exceptions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#validation-after-conversion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation After Conversion
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#chunking-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chunking Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#profiling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Profiling
+        Report Shape
       
     </span>
   </a>
@@ -1061,7 +885,150 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/contributing/" class="md-nav__link">
+      <a href="../validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../manifest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manifest
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/contributing/" class="md-nav__link">
         
   
   
@@ -1089,7 +1056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/testing/" class="md-nav__link">
+      <a href="../../development/testing/" class="md-nav__link">
         
   
   
@@ -1117,7 +1084,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/roadmap/" class="md-nav__link">
+      <a href="../../development/roadmap/" class="md-nav__link">
         
   
   
@@ -1204,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/config/" class="md-nav__link">
+      <a href="../../api/config/" class="md-nav__link">
         
   
   
@@ -1232,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/converter/" class="md-nav__link">
+      <a href="../../api/converter/" class="md-nav__link">
         
   
   
@@ -1260,7 +1227,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/chunker/" class="md-nav__link">
+      <a href="../../api/chunker/" class="md-nav__link">
         
   
   
@@ -1288,7 +1255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/profiler/" class="md-nav__link">
+      <a href="../../api/profiler/" class="md-nav__link">
         
   
   
@@ -1316,7 +1283,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/validator/" class="md-nav__link">
+      <a href="../../api/validator/" class="md-nav__link">
         
   
   
@@ -1344,7 +1311,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/manifest/" class="md-nav__link">
+      <a href="../../api/manifest/" class="md-nav__link">
         
   
   
@@ -1372,7 +1339,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/exceptions/" class="md-nav__link">
+      <a href="../../api/exceptions/" class="md-nav__link">
         
   
   
@@ -1427,10 +1394,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#design-choices" class="md-nav__link">
+  <a href="#cli-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Design Choices
+        CLI Example
       
     </span>
   </a>
@@ -1438,10 +1405,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ffmpeg-for-decode-and-encode" class="md-nav__link">
+  <a href="#python-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FFmpeg For Decode And Encode
+        Python Example
       
     </span>
   </a>
@@ -1449,43 +1416,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#result-objects-instead-of-batch-exceptions" class="md-nav__link">
+  <a href="#report-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Result Objects Instead Of Batch Exceptions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#validation-after-conversion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation After Conversion
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#chunking-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Chunking Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#profiling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Profiling
+        Report Shape
       
     </span>
   </a>
@@ -1509,7 +1443,7 @@
 
 
   
-    <a href="https://github.com/nattkorat/audio-prep-pipeline/edit/master/docs/architecture.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/nattkorat/audio-prep-pipeline/edit/master/docs/pipeline/profiling.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1517,38 +1451,99 @@
   
 
 
-<h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
-<p>The package is intentionally small and module-oriented.</p>
-<pre><code>audio_prep/
-├── cli.py          # argparse entry point
-├── config.py       # conversion configuration
-├── converter.py    # discovery and FFmpeg conversion
-├── chunker.py      # VAD chunking
-├── profiler.py     # runtime resource profiles
-├── validator.py    # output validation and duration probing
-├── manifest.py     # JSONL manifest records and writer
-└── exceptions.py   # package exceptions</code></pre>
+<h1 id="profiling">Profiling<a class="headerlink" href="#profiling" title="Permanent link">&para;</a></h1>
+<p>Profiling records wall time, CPU time, child-process CPU time, and peak resident
+memory. The CLI writes JSON reports with one record per pipeline stage.</p>
+<h2 id="cli-example">CLI Example<a class="headerlink" href="#cli-example" title="Permanent link">&para;</a></h2>
+<p>Conversion:</p>
+<pre><code>audio-prep convert \
+    --input-dir data/raw_mp3 \
+    --output-dir data/wav16k \
+    --profile profiles/convert.json</code></pre>
 
-<h2 id="design-choices">Design Choices<a class="headerlink" href="#design-choices" title="Permanent link">&para;</a></h2>
-<h2 id="ffmpeg-for-decode-and-encode">FFmpeg For Decode And Encode<a class="headerlink" href="#ffmpeg-for-decode-and-encode" title="Permanent link">&para;</a></h2>
-<p>Source decoding is delegated to FFmpeg because real corpora often contain VBR
-files, odd headers, unusual containers, corrupt metadata, and other cases that
-pure Python decoders handle less consistently.</p>
-<h2 id="result-objects-instead-of-batch-exceptions">Result Objects Instead Of Batch Exceptions<a class="headerlink" href="#result-objects-instead-of-batch-exceptions" title="Permanent link">&para;</a></h2>
-<p>Conversion and chunking return result objects per file. This lets a large corpus
-finish even when individual files are broken.</p>
-<h2 id="validation-after-conversion">Validation After Conversion<a class="headerlink" href="#validation-after-conversion" title="Permanent link">&para;</a></h2>
-<p>FFmpeg success is not treated as enough. Converted output is reopened and
-checked for sample rate, channel count, readability, and minimum duration.</p>
-<h2 id="chunking-dependencies">Chunking Dependencies<a class="headerlink" href="#chunking-dependencies" title="Permanent link">&para;</a></h2>
-<p>The base package includes Torch, Silero VAD, Pyannote, and tqdm so both
-<code>convert</code> and <code>chunk</code> are ready after <code>pip install audio-prep-pipeline</code>.
-Chunker imports are still lazy, so conversion-only commands avoid VAD startup
-cost.</p>
-<h2 id="profiling">Profiling<a class="headerlink" href="#profiling" title="Permanent link">&para;</a></h2>
-<p>The profiler uses the standard library to record wall time, CPU time, child
-process CPU time, and peak RSS. CLI reports are JSON so model-backend timing
-runs can be compared outside the package.</p>
+<p>Chunking with Silero:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-silero \
+    --vad-backend silero \
+    --profile profiles/chunk-silero.json</code></pre>
+
+<p>Chunking with Pyannote:</p>
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --hf-token "$HF_TOKEN" \
+    --profile profiles/chunk-pyannote.json</code></pre>
+
+<p>Use the same input directory, sample rate, chunk duration settings, and worker
+count when comparing detector backends. For the clearest single-model timing,
+set <code>--workers 1</code>.</p>
+<h2 id="python-example">Python Example<a class="headerlink" href="#python-example" title="Permanent link">&para;</a></h2>
+<pre><code>from pathlib import Path
+
+from audio_prep import ChunkConfig, Profiler, chunk_batch
+
+profiler = Profiler()
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    sample_rate=16_000,
+    num_workers=1,
+    vad_backend=&quot;pyannote&quot;,
+    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+)
+
+with profiler.measure(&quot;chunk&quot;, {&quot;vad_backend&quot;: config.vad_backend}):
+    results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks-pyannote&quot;), config)
+
+profiler.write_json(
+    Path(&quot;profiles/chunk-pyannote.json&quot;),
+    operation=&quot;chunk&quot;,
+    metadata={&quot;files&quot;: len(results), &quot;vad_backend&quot;: config.vad_backend},
+)</code></pre>
+
+<h2 id="report-shape">Report Shape<a class="headerlink" href="#report-shape" title="Permanent link">&para;</a></h2>
+<p>The JSON report contains:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>operation</code></td>
+<td><code>convert</code> or <code>chunk</code>.</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>Run-level inputs such as backend, worker count, and file counts.</td>
+</tr>
+<tr>
+<td><code>summary.elapsed_sec</code></td>
+<td>Sum of measured stage wall times.</td>
+</tr>
+<tr>
+<td><code>summary.total_cpu_sec</code></td>
+<td>Sum of self and child CPU time across measured stages.</td>
+</tr>
+<tr>
+<td><code>summary.self_max_rss_mb</code></td>
+<td>Peak resident memory for the current process.</td>
+</tr>
+<tr>
+<td><code>summary.children_max_rss_mb</code></td>
+<td>Peak resident memory reported for child processes.</td>
+</tr>
+<tr>
+<td><code>records</code></td>
+<td>Per-stage measurements such as <code>discover</code>, <code>convert</code>, <code>chunk</code>, <code>validate</code>, and <code>manifest</code>.</td>
+</tr>
+</tbody>
+</table>
 
 
 
@@ -1598,10 +1593,10 @@ runs can be compared outside the package.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "content.code.copy", "search.highlight", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
