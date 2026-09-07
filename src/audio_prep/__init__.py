@@ -38,7 +38,7 @@ from audio_prep.manifest import (
 from audio_prep.profiler import Profiler, ProfileRecord
 from audio_prep.validator import ValidationResult, validate_output
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 __all__ = [
     "ConversionConfig",
