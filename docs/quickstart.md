@@ -97,7 +97,9 @@ CLI:
     --min-duration-sec 5 \
     --max-duration-sec 20 \
     --workers 4 \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --vad-backend silero \
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
 
 
 Python:
@@ -106,11 +108,18 @@ Python:
 
 from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
-config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, num_workers=4)
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    num_workers=4,
+    vad_backend=&quot;silero&quot;,
+)
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
 
 
-Use `--allow-energy-fallback` only when Silero VAD is not available and an
-approximate offline detector is acceptable.
+Use `--vad-backend pyannote --profile profiles/chunk-pyannote.json` to compare
+Pyannote timing against Silero. Use `--allow-energy-fallback` only when the
+selected VAD backend is not available and an approximate offline detector is
+acceptable.

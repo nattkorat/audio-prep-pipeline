@@ -1,4 +1,4 @@
-"""Voice-activity-based speech chunking (Silero VAD).
+"""Voice-activity-based speech chunking.
 
 Ported from the ASR pretraining-data-prep pipeline. Splits source audio
 into speech-only chunks bounded by a [min, max] duration window, so
@@ -7,11 +7,9 @@ Decoding (and resampling, via `ChunkConfig.sample_rate`) is done with
 ffmpeg, the same as `converter.py`, so it doesn't depend on `soundfile`
 being built with support for every source container.
 
-Silero VAD pulls in `torch` and `silero-vad`, which are heavy compared to
-the rest of this project's footprint. They are part of the base package
-dependencies so both `audio-prep convert` and `audio-prep chunk` are ready
-after `pip install audio-prep-pipeline`; imports are still deferred to first
-VAD use so conversion startup stays light.
+Silero VAD is the default detector. Pyannote can be selected for comparison,
+and the energy detector is available as an offline fallback. Heavy model
+imports are deferred to first VAD use so conversion startup stays light.
 """
 
 from __future__ import annotations
@@ -25,7 +23,7 @@ from collections.abc import Callable, Iterable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TypeVar, cast
+from typing import Any, Literal, TypeAlias, TypeVar, cast
 
 import numpy as np
 import soundfile as sf
@@ -36,9 +34,11 @@ from audio_prep.exceptions import AudioPrepError
 logger = logging.getLogger(__name__)
 
 SUPPORTED_CHUNK_FORMATS = ("wav", "flac")
+SUPPORTED_VAD_BACKENDS = ("silero", "pyannote", "energy")
+DEFAULT_PYANNOTE_MODEL = "pyannote/voice-activity-detection"
+VadBackend: TypeAlias = Literal["silero", "pyannote", "energy"]
 
-_vad_model_cache: Any = None
-_vad_detector_cache: Callable[..., Any] | None = None
+_vad_cache: dict[tuple[str, str | None, bool], tuple[Any, Callable[..., Any]]] = {}
 _T = TypeVar("_T")
 
 
@@ -66,6 +66,9 @@ class ChunkConfig:
     num_workers: int = 1
     overwrite: bool = False
     allow_energy_fallback: bool = False
+    vad_backend: str = "silero"
+    pyannote_model: str = DEFAULT_PYANNOTE_MODEL
+    hf_token: str | None = None
 
     def __post_init__(self) -> None:
         if self.output_format not in SUPPORTED_CHUNK_FORMATS:
@@ -84,6 +87,12 @@ class ChunkConfig:
             raise ValueError(f"sample_rate must be positive, got {self.sample_rate}")
         if self.num_workers <= 0:
             raise ValueError(f"num_workers must be positive, got {self.num_workers}")
+        if self.vad_backend not in SUPPORTED_VAD_BACKENDS:
+            raise ValueError(
+                f"vad_backend must be one of {SUPPORTED_VAD_BACKENDS}, got {self.vad_backend!r}"
+            )
+        if self.vad_backend == "pyannote" and not self.pyannote_model.strip():
+            raise ValueError("pyannote_model must be non-empty when vad_backend='pyannote'")
 
 
 @dataclass(slots=True)
@@ -127,6 +136,55 @@ def _load_vad_from_torch_hub() -> tuple[Any, Callable[..., Any]]:
         return get_speech_timestamps(audio, model, sampling_rate=sampling_rate)
 
     return model, detect
+
+
+def _load_vad_from_pyannote(
+    model_name: str,
+    hf_token: str | None,
+) -> tuple[Any, Callable[..., Any]]:
+    import torch
+    from pyannote.audio import Pipeline
+
+    from_pretrained: Callable[..., Any] = Pipeline.from_pretrained
+    kwargs = {"token": hf_token} if hf_token else {}
+    try:
+        pipeline_model = from_pretrained(model_name, **kwargs)
+    except TypeError:
+        if not hf_token:
+            raise
+        pipeline_model = from_pretrained(model_name, use_auth_token=hf_token)
+    if pipeline_model is None:
+        raise RuntimeError(
+            f"pyannote.audio could not load {model_name!r}; check model access and token"
+        )
+    pipeline = cast(Callable[[dict[str, Any]], Any], pipeline_model)
+
+    def detect(audio: Any, sampling_rate: int) -> list[dict[str, int]]:
+        waveform = torch.as_tensor(np.asarray(audio), dtype=torch.float32)
+        if waveform.ndim == 1:
+            waveform = waveform.unsqueeze(0)
+        with torch.no_grad():
+            output = pipeline({"waveform": waveform, "sample_rate": sampling_rate})
+        return _pyannote_output_to_timestamps(output, sampling_rate)
+
+    return pipeline_model, detect
+
+
+def _pyannote_output_to_timestamps(output: Any, sampling_rate: int) -> list[dict[str, int]]:
+    if hasattr(output, "get_timeline"):
+        timeline = output.get_timeline().support()
+    elif hasattr(output, "support"):
+        timeline = output.support()
+    else:
+        raise RuntimeError("pyannote VAD output does not expose a timeline")
+
+    timestamps: list[dict[str, int]] = []
+    for segment in timeline:
+        start = max(0, int(float(segment.start) * sampling_rate))
+        end = max(start, int(float(segment.end) * sampling_rate))
+        if end > start:
+            timestamps.append({"start": start, "end": end})
+    return timestamps
 
 
 def _with_progress(iterable: Iterable[_T], **kwargs: Any) -> Iterable[_T]:
@@ -174,50 +232,75 @@ def _energy_based_detector(audio: NDArray[Any], sampling_rate: int) -> list[dict
     return timestamps
 
 
-def load_vad_model(allow_energy_fallback: bool = False) -> tuple[Any, Callable[..., Any]]:
+def load_vad_model(
+    allow_energy_fallback: bool = False,
+    *,
+    backend: str = "silero",
+    pyannote_model: str = DEFAULT_PYANNOTE_MODEL,
+    hf_token: str | None = None,
+) -> tuple[Any, Callable[..., Any]]:
     """Load (and process-wide cache) a VAD speech-timestamp detector.
 
-    Tries the `silero-vad` pip package first, then `torch.hub`. Returns
-    `(model, detect)` where `detect(audio, sampling_rate)` returns a list
-    of `{"start": int, "end": int}` sample-index dicts. `model` is `None`
-    when running the energy-based fallback.
+    For `backend="silero"`, tries the `silero-vad` pip package first, then
+    `torch.hub`. For `backend="pyannote"`, loads `pyannote_model` through
+    `pyannote.audio.Pipeline.from_pretrained`. Returns `(model, detect)` where
+    `detect(audio, sampling_rate)` returns a list of `{"start": int, "end": int}`
+    sample-index dicts. `model` is `None` when running the energy detector.
 
-    Raises `ChunkingError` if Silero can't be loaded and
+    Raises `ChunkingError` if the selected VAD backend can't be loaded and
     `allow_energy_fallback` is `False`.
     """
-    global _vad_model_cache, _vad_detector_cache
-    if _vad_detector_cache is not None:
-        return _vad_model_cache, _vad_detector_cache
+    if backend not in SUPPORTED_VAD_BACKENDS:
+        raise ValueError(f"backend must be one of {SUPPORTED_VAD_BACKENDS}, got {backend!r}")
+
+    resolved_token = hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
+    model_key = pyannote_model if backend == "pyannote" else None
+    token_present = bool(resolved_token) if backend == "pyannote" else False
+    cache_key = (backend, model_key, token_present)
+    if cache_key in _vad_cache:
+        return _vad_cache[cache_key]
+
+    if backend == "energy":
+        _vad_cache[cache_key] = (None, _energy_based_detector)
+        return _vad_cache[cache_key]
 
     errors = []
     model: Any = None
     detect: Callable[..., Any] | None = None
-    for name, loader in (
-        ("silero-vad package", _load_vad_from_package),
-        ("torch.hub", _load_vad_from_torch_hub),
-    ):
+
+    if backend == "silero":
+        for name, loader in (
+            ("silero-vad package", _load_vad_from_package),
+            ("torch.hub", _load_vad_from_torch_hub),
+        ):
+            try:
+                model, detect = loader()
+                break
+            except Exception as exc:  # noqa: BLE001 - try the next loader, report all failures
+                errors.append(f"{name}: {exc}")
+    elif backend == "pyannote":
         try:
-            model, detect = loader()
-            break
-        except Exception as exc:  # noqa: BLE001 - try the next loader, report all failures
-            errors.append(f"{name}: {exc}")
+            model, detect = _load_vad_from_pyannote(pyannote_model, resolved_token)
+        except Exception as exc:  # noqa: BLE001 - surface optional backend load errors clearly
+            errors.append(f"pyannote.audio model {pyannote_model!r}: {exc}")
 
     if detect is None:
         if not allow_energy_fallback:
             raise ChunkingError(
                 "<vad model>",
-                "could not load Silero VAD via the silero-vad package or "
-                "torch.hub, and allow_energy_fallback is disabled. "
+                f"could not load VAD backend {backend!r}, and allow_energy_fallback "
+                "is disabled. "
                 f"Underlying errors: {'; '.join(errors)}",
             )
         logger.warning(
-            "Falling back to low-quality energy-based VAD (Silero unavailable): %s",
+            "Falling back to low-quality energy-based VAD (%s unavailable): %s",
+            backend,
             "; ".join(errors),
         )
         model, detect = None, _energy_based_detector
 
-    _vad_model_cache, _vad_detector_cache = model, detect
-    return model, detect
+    _vad_cache[cache_key] = (model, detect)
+    return _vad_cache[cache_key]
 
 
 def chunk_audio_with_vad(
@@ -239,7 +322,12 @@ def chunk_audio_with_vad(
     config = config or ChunkConfig()
 
     if detect is None:
-        _, detect = load_vad_model(allow_energy_fallback=config.allow_energy_fallback)
+        _, detect = load_vad_model(
+            allow_energy_fallback=config.allow_energy_fallback,
+            backend=config.vad_backend,
+            pyannote_model=config.pyannote_model,
+            hf_token=config.hf_token,
+        )
 
     audio = np.asarray(audio)
     if audio.ndim > 1:
@@ -425,7 +513,12 @@ def chunk_batch(
     # worker's first call, via the same module-level cache) doesn't pay
     # the load cost per file. Also lets a load failure surface immediately,
     # before any progress bar work, with its exact underlying error.
-    load_vad_model(allow_energy_fallback=config.allow_energy_fallback)
+    _model, detect = load_vad_model(
+        allow_energy_fallback=config.allow_energy_fallback,
+        backend=config.vad_backend,
+        pyannote_model=config.pyannote_model,
+        hf_token=config.hf_token,
+    )
 
     jobs = []
     for f in source_files:
@@ -445,7 +538,7 @@ def chunk_batch(
 
     if config.num_workers == 1:
         return [
-            chunk_file(src, dst, config)
+            chunk_file(src, dst, config, detect=detect)
             for src, dst in _with_progress(jobs, desc="Chunking", unit="file")
         ]
 

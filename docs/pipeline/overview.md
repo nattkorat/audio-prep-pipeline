@@ -41,12 +41,15 @@ Run the pipelines directly from the command line:
 <pre><code>audio-prep convert \
     --input-dir data/raw_mp3 \
     --output-dir data/wav16k \
-    --manifest data/manifest.jsonl
+    --manifest data/manifest.jsonl \
+    --profile profiles/convert.json
 
 audio-prep chunk \
     --input-dir data/raw_mp3 \
     --output-dir data/chunks \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --vad-backend silero \
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
 
 
 Or call the same pipeline functions from Python:
@@ -64,5 +67,5 @@ converted = convert_batch(
 chunks = chunk_batch(
     Path(&quot;data/raw_mp3&quot;),
     Path(&quot;data/chunks&quot;),
-    ChunkConfig(),
+    ChunkConfig(vad_backend=&quot;silero&quot;),
 )</code></pre>

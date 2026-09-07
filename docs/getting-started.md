@@ -60,7 +60,8 @@ CLI:
 <pre><code>audio-prep convert \
     --input-dir data/raw_mp3 \
     --output-dir data/wav16k \
-    --manifest data/manifest.jsonl</code></pre>
+    --manifest data/manifest.jsonl \
+    --profile profiles/convert.json</code></pre>
 
 
 Python:
@@ -90,7 +91,9 @@ CLI chunking:
     --output-dir data/chunks \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --vad-backend silero \
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
 
 
 Python chunking:
@@ -99,10 +102,20 @@ Python chunking:
 
 from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
-config = ChunkConfig(min_duration_sec=5, max_duration_sec=20)
+config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, vad_backend=&quot;silero&quot;)
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
+
+
+Pyannote comparison:
+
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --profile profiles/chunk-pyannote.json</code></pre>
 
 ## Resume Behavior
 

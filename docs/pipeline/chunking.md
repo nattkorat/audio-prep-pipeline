@@ -5,12 +5,17 @@ Chunking splits source audio into speech-only chunks. It is implemented in
 
 ## Detector
 
-The preferred detector is Silero VAD. The project tries to load Silero from the
+The default detector is Silero VAD. The project tries to load Silero from the
 installed `silero-vad` package first, then from `torch.hub`.
 
-If Silero is unavailable and `allow_energy_fallback=True`, chunking uses a
-simple energy-based detector. This fallback is useful for offline testing but is
-lower quality than Silero.
+Pyannote is also available for comparison by setting `vad_backend="pyannote"` in
+Python or `--vad-backend pyannote` in the CLI. Some Pyannote models require a
+Hugging Face token and accepted model terms, so pass `--hf-token` or set
+`HF_TOKEN`/`HUGGINGFACE_TOKEN` when needed.
+
+If the selected detector is unavailable and `allow_energy_fallback=True`,
+chunking uses a simple energy-based detector. This fallback is useful for
+offline testing but is lower quality than model-based VAD.
 
 ## Decode And Resample
 
@@ -45,7 +50,20 @@ If two source files in the same directory share a stem, such as `clip.mp3` and
     --min-duration-sec 5 \
     --max-duration-sec 20 \
     --workers 4 \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
+
+
+Pyannote comparison:
+
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --sample-rate 16000 \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --hf-token "$HF_TOKEN" \
+    --profile profiles/chunk-pyannote.json</code></pre>
 
 
 ## Python Example
@@ -60,6 +78,7 @@ config = ChunkConfig(
     output_format=&quot;flac&quot;,
     sample_rate=16_000,
     num_workers=4,
+    vad_backend=&quot;silero&quot;,
 )
 
 results = chunk_batch(
@@ -69,3 +88,29 @@ results = chunk_batch(
 )
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
+
+
+Pyannote comparison from Python:
+
+<pre><code>from pathlib import Path
+
+from audio_prep import ChunkConfig, Profiler, chunk_batch
+
+profiler = Profiler()
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    sample_rate=16_000,
+    num_workers=1,
+    vad_backend=&quot;pyannote&quot;,
+    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+)
+
+with profiler.measure(&quot;chunk-pyannote&quot;, {&quot;vad_backend&quot;: config.vad_backend}):
+    results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks-pyannote&quot;), config)
+
+profiler.write_json(
+    Path(&quot;profiles/chunk-pyannote.json&quot;),
+    operation=&quot;chunk&quot;,
+    metadata={&quot;files&quot;: len(results), &quot;vad_backend&quot;: config.vad_backend},
+)</code></pre>

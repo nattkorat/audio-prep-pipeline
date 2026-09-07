@@ -13,6 +13,11 @@ Configuration dataclass for VAD chunking.
 | `num_workers` | `int` | `1` |
 | `overwrite` | `bool` | `False` |
 | `allow_energy_fallback` | `bool` | `False` |
+| `vad_backend` | `str` | `silero` |
+| `pyannote_model` | `str` | `pyannote/voice-activity-detection` |
+| `hf_token` | `Optional[str]` | `None` |
+
+Supported VAD backends are `silero`, `pyannote`, and `energy`.
 
 ## `ChunkResult`
 
@@ -39,7 +44,28 @@ Example:
 
 from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
-config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, sample_rate=16_000)
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    sample_rate=16_000,
+    vad_backend=&quot;silero&quot;,
+)
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
+
+
+Pyannote comparison:
+
+<pre><code>from pathlib import Path
+
+from audio_prep import ChunkConfig, chunk_batch
+
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    sample_rate=16_000,
+    vad_backend=&quot;pyannote&quot;,
+    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+)
+results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks-pyannote&quot;), config)</code></pre>

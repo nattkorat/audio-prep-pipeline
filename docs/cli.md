@@ -22,7 +22,8 @@ It has two independent subcommands:
     --channels 1 \
     --workers 4 \
     --min-duration-sec 0.5 \
-    --manifest data/manifest.jsonl</code></pre>
+    --manifest data/manifest.jsonl \
+    --profile profiles/convert.json</code></pre>
 
 
 | Flag | Default | Description |
@@ -38,6 +39,7 @@ It has two independent subcommands:
 | `--overwrite` | off | Rebuild even when an existing output is valid. |
 | `--normalize-loudness` | off | Apply single-pass EBU R128 loudness normalization. |
 | `--manifest` | none | Path to write conversion manifest JSONL. |
+| `--profile` | none | Path to write a JSON profile with wall time, CPU time, and peak RSS. |
 
 Exit codes:
 
@@ -57,7 +59,19 @@ Exit codes:
     --min-duration-sec 5 \
     --max-duration-sec 20 \
     --workers 4 \
-    --manifest data/chunk_manifest.jsonl</code></pre>
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json</code></pre>
+
+
+Compare with Pyannote:
+
+<pre><code>audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --hf-token "$HF_TOKEN" \
+    --profile profiles/chunk-pyannote.json</code></pre>
 
 
 | Flag | Default | Description |
@@ -71,8 +85,12 @@ Exit codes:
 | `--max-duration-sec` | `20.0` | Split longer speech into windows no longer than this. |
 | `--workers` | `4` | Number of parallel chunking workers. |
 | `--overwrite` | off | Rebuild even when an existing chunk is valid. |
-| `--allow-energy-fallback` | off | Use a lower-quality energy detector if Silero cannot load. |
+| `--vad-backend` | `silero` | Speech detector backend: `silero`, `pyannote`, or `energy`. |
+| `--pyannote-model` | `pyannote/voice-activity-detection` | Hugging Face model id used with `--vad-backend pyannote`. |
+| `--hf-token` | none | Hugging Face token for gated Pyannote models. Falls back to `HF_TOKEN` or `HUGGINGFACE_TOKEN`. |
+| `--allow-energy-fallback` | off | Use a lower-quality energy detector if the selected VAD backend cannot load. |
 | `--manifest` | none | Path to write chunk manifest JSONL. |
+| `--profile` | none | Path to write a JSON profile with wall time, CPU time, and peak RSS. |
 
 Exit codes:
 
