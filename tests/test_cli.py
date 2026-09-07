@@ -118,6 +118,34 @@ def test_cli_convert_extensions_all_lets_ffmpeg_report_bad_files(tmp_path: Path)
     assert statuses == ["ok", "conversion_failed"]
 
 
+def test_cli_convert_writes_profile(tmp_path: Path) -> None:
+    from tests.conftest import make_sine_audio
+
+    input_dir = tmp_path / "raw"
+    make_sine_audio(input_dir / "clip.wav", duration=1.0)
+    profile_path = tmp_path / "convert_profile.json"
+
+    exit_code = main(
+        [
+            "convert",
+            "--input-dir",
+            str(input_dir),
+            "--output-dir",
+            str(tmp_path / "out"),
+            "--workers",
+            "1",
+            "--profile",
+            str(profile_path),
+        ]
+    )
+
+    assert exit_code == 0
+    profile = json.loads(profile_path.read_text())
+    assert profile["operation"] == "convert"
+    assert profile["metadata"]["files"] == 1
+    assert {record["name"] for record in profile["records"]} >= {"discover", "convert", "validate"}
+
+
 def test_cli_rejects_unsupported_format(tmp_path: Path) -> None:
     with pytest.raises(SystemExit):
         main(
@@ -146,7 +174,9 @@ class TestCliChunk:
             return [{"start": 0, "end": len(audio)}]
 
         monkeypatch.setattr(
-            chunker, "load_vad_model", lambda allow_energy_fallback=False: (None, all_speech_detect)
+            chunker,
+            "load_vad_model",
+            lambda allow_energy_fallback=False, **kwargs: (None, all_speech_detect),
         )
 
     def test_chunk_command_writes_chunks_directly_from_mp3_dir(self, tmp_path: Path) -> None:
@@ -276,3 +306,37 @@ class TestCliChunk:
         record = json.loads(manifest_path.read_text().splitlines()[0])
         assert record["status"] == "ok"
         assert record["num_chunks"] == 3
+
+    def test_chunk_command_writes_pyannote_profile(self, tmp_path: Path) -> None:
+        from tests.conftest import make_sine_mp3
+
+        input_dir = tmp_path / "raw"
+        make_sine_mp3(input_dir / "clip.mp3", duration=3.0)
+        profile_path = tmp_path / "chunk_profile.json"
+
+        exit_code = main(
+            [
+                "chunk",
+                "--input-dir",
+                str(input_dir),
+                "--min-duration-sec",
+                "1",
+                "--max-duration-sec",
+                "3",
+                "--workers",
+                "1",
+                "--vad-backend",
+                "pyannote",
+                "--pyannote-model",
+                "org/custom-vad",
+                "--profile",
+                str(profile_path),
+            ]
+        )
+
+        assert exit_code == 0
+        profile = json.loads(profile_path.read_text())
+        assert profile["operation"] == "chunk"
+        assert profile["metadata"]["vad_backend"] == "pyannote"
+        assert profile["metadata"]["pyannote_model"] == "org/custom-vad"
+        assert profile["metadata"]["chunks"] == 1

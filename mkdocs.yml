@@ -40,6 +40,7 @@ nav:
       - Discovery: pipeline/discovery.md
       - Conversion: pipeline/conversion.md
       - Chunking: pipeline/chunking.md
+      - Profiling: pipeline/profiling.md
       - Validation: pipeline/validation.md
       - Manifest: pipeline/manifest.md
 
@@ -53,6 +54,7 @@ nav:
       - Config: api/config.md
       - Converter: api/converter.md
       - Chunker: api/chunker.md
+      - Profiler: api/profiler.md
       - Validator: api/validator.md
       - Manifest: api/manifest.md
       - Exceptions: api/exceptions.md

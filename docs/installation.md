@@ -61,12 +61,16 @@ For documentation work:
 
 ## Chunking Dependencies
 
-The standard package install includes `torch`, `silero-vad`, and `tqdm`, so
-both `audio-prep convert` and `audio-prep chunk` are ready after:
+The standard package install includes `torch`, `silero-vad`, `pyannote-audio`,
+and `tqdm`, so both `audio-prep convert` and `audio-prep chunk` are ready after:
 
 <pre><code>pip install audio-prep-pipeline</code></pre>
 
 
-The first chunking run loads Silero from the installed `silero-vad` package.
-If Silero cannot load in an offline environment, pass `--allow-energy-fallback`
-to use the lower-quality offline energy detector.
+The first chunking run loads Silero from the installed `silero-vad` package by
+default. Use `--vad-backend pyannote` to compare with a Pyannote model. Some
+Pyannote models require a Hugging Face token and accepted model terms; pass
+`--hf-token` or set `HF_TOKEN`/`HUGGINGFACE_TOKEN`.
+
+If the selected VAD backend cannot load in an offline environment, pass
+`--allow-energy-fallback` to use the lower-quality offline energy detector.

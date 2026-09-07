@@ -27,7 +27,8 @@ audio-prep-pipeline/
 │   ├── config.py        # ConversionConfig: target spec + behavior knobs
 │   ├── converter.py      # find_audio_files, convert_file, convert_batch
 │   ├── validator.py      # probe_duration, validate_output
-│   ├── chunker.py         # ChunkConfig, chunk_file, chunk_batch -- Silero VAD speech chunking
+│   ├── chunker.py         # ChunkConfig, chunk_file, chunk_batch -- VAD speech chunking
+│   ├── profiler.py        # Profiler, ProfileRecord -- runtime resource reports
 │   ├── manifest.py       # build_manifest, write_manifest (JSONL output)
 │   ├── exceptions.py     # ConversionError, ProbeError, ChunkingError
 │   └── cli.py             # `audio-prep convert ...` / `audio-prep chunk ...` entry point
@@ -52,9 +53,9 @@ running first -- both scan `--input-dir` for supported source files directly.
 - **`audio-prep convert`** - conversion only: `ffmpeg` resample/remix/re-encode
   into the target WAV/FLAC spec, then validation, then an optional manifest.
   Does not chunk.
-- **`audio-prep chunk`** - chunking only: Silero VAD speech chunking straight
-  from source audio, with its own resample/format/manifest options. Does not convert
-  or validate.
+- **`audio-prep chunk`** - chunking only: VAD speech chunking straight
+  from source audio, with Silero by default and Pyannote available for
+  comparison. Does not convert or validate.
 
 ### `convert` pipeline stages
 
@@ -80,8 +81,8 @@ job three hours in.
 
 1. **discovery** (`find_audio_files`) — recursively find supported source files
    under an input directory.
-2. **chunking** (`chunk_file` / `chunk_batch`) — runs Silero VAD over each
-   file (decoding/resampling via ffmpeg) and splits it into speech-only
+2. **chunking** (`chunk_file` / `chunk_batch`) — runs the selected VAD backend
+   over each file (decoding/resampling via ffmpeg) and splits it into speech-only
    chunks bounded by a `[min, max]` duration window, so silence-heavy source
    recordings don't waste pretraining compute.
 3. **manifest** (`build_chunk_manifest` / `write_manifest`), optional — JSONL
@@ -112,9 +113,11 @@ For local development:
 make install   # pip install -e ".[dev]" + pre-commit install
 ```
 
-The same install provides both `audio-prep convert` and `audio-prep chunk`.
+The same install provides `audio-prep convert`, `audio-prep chunk`, Silero VAD,
+and Pyannote VAD support.
 FFmpeg/FFprobe are still system dependencies and must be available on `PATH`.
-If Silero VAD cannot load in an offline environment, pass
+Some Pyannote models require a Hugging Face token and accepted model terms.
+If the selected VAD backend cannot load in an offline environment, pass
 `--allow-energy-fallback` to use a lower-quality offline detector instead.
 
 ## Usage
@@ -130,7 +133,8 @@ audio-prep convert \
     --format wav \
     --sample-rate 16000 \
     --workers 8 \
-    --manifest data/manifest.jsonl
+    --manifest data/manifest.jsonl \
+    --profile profiles/convert.json
 ```
 
 Python:
@@ -138,7 +142,13 @@ Python:
 ```python
 from pathlib import Path
 
-from audio_prep import ConversionConfig, build_manifest, convert_batch, validate_output, write_manifest
+from audio_prep import (
+    ConversionConfig,
+    build_manifest,
+    convert_batch,
+    validate_output,
+    write_manifest,
+)
 
 config = ConversionConfig(
     output_format="wav",
@@ -170,6 +180,7 @@ write_manifest(records, Path("data/manifest.jsonl"))
 | `--overwrite` | off | re-convert even if output already exists and passes validation |
 | `--normalize-loudness` | off | apply EBU R128 loudness normalization (-23 LUFS) |
 | `--manifest` | none | path to write a JSONL manifest |
+| `--profile` | none | path to write a JSON profile with wall time, CPU time, and peak RSS |
 
 ### `audio-prep chunk`
 
@@ -188,7 +199,8 @@ audio-prep chunk \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
     --workers 4 \
-    --manifest data/chunk_manifest.jsonl
+    --manifest data/chunk_manifest.jsonl \
+    --profile profiles/chunk-silero.json
 ```
 
 Python:
@@ -204,6 +216,7 @@ config = ChunkConfig(
     output_format="flac",
     sample_rate=16_000,
     num_workers=4,
+    vad_backend="silero",
 )
 
 results = chunk_batch(Path("data/raw_mp3"), Path("data/chunks"), config)
@@ -222,8 +235,44 @@ write_manifest(records, Path("data/chunk_manifest.jsonl"))
 | `--max-duration-sec` | 20.0 | split longer speech into windows this size |
 | `--workers` | 4 | parallel chunking workers |
 | `--overwrite` | off | re-chunk even if valid output already exists |
-| `--allow-energy-fallback` | off | fall back to a low-quality energy detector if Silero can't load, instead of raising |
+| `--vad-backend` | `silero` | speech detector backend: `silero`, `pyannote`, or `energy` |
+| `--pyannote-model` | `pyannote/voice-activity-detection` | Hugging Face model id used with `--vad-backend pyannote` |
+| `--hf-token` | none | Hugging Face token for gated Pyannote models; falls back to `HF_TOKEN` or `HUGGINGFACE_TOKEN` |
+| `--allow-energy-fallback` | off | fall back to a low-quality energy detector if the selected VAD can't load, instead of raising |
 | `--manifest` | none | path to write a JSONL chunk manifest (source file, status, chunk count/paths) |
+| `--profile` | none | path to write a JSON profile with wall time, CPU time, and peak RSS |
+
+Compare VAD backends with the same input/settings:
+
+```bash
+audio-prep chunk \
+    --input-dir data/raw_mp3 \
+    --output-dir data/chunks-pyannote \
+    --vad-backend pyannote \
+    --pyannote-model pyannote/voice-activity-detection \
+    --hf-token "$HF_TOKEN" \
+    --profile profiles/chunk-pyannote.json
+```
+
+Python profiling:
+
+```python
+from pathlib import Path
+
+from audio_prep import ChunkConfig, Profiler, chunk_batch
+
+profiler = Profiler()
+config = ChunkConfig(vad_backend="pyannote", sample_rate=16_000, num_workers=1)
+
+with profiler.measure("chunk", {"vad_backend": config.vad_backend}):
+    results = chunk_batch(Path("data/raw_mp3"), Path("data/chunks-pyannote"), config)
+
+profiler.write_json(
+    Path("profiles/chunk-pyannote.json"),
+    operation="chunk",
+    metadata={"files": len(results), "vad_backend": config.vad_backend},
+)
+```
 
 `chunk_file` itself doesn't care about source extension -- it decodes
 whatever path it's given -- so the Python API can also chunk an existing

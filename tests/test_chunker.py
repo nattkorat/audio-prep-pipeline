@@ -67,6 +67,14 @@ class TestChunkConfig:
         with pytest.raises(ValueError, match="min_duration_sec"):
             ChunkConfig(min_duration_sec=0)
 
+    def test_rejects_unknown_vad_backend(self) -> None:
+        with pytest.raises(ValueError, match="vad_backend"):
+            ChunkConfig(vad_backend="unknown")
+
+    def test_rejects_empty_pyannote_model(self) -> None:
+        with pytest.raises(ValueError, match="pyannote_model"):
+            ChunkConfig(vad_backend="pyannote", pyannote_model="")
+
 
 class TestEnergyDetector:
     """_energy_based_detector: the offline RMS fallback VAD."""
@@ -103,8 +111,7 @@ class TestLoadVadModel:
 
     @pytest.fixture(autouse=True)
     def clear_cache(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(chunker, "_vad_model_cache", None)
-        monkeypatch.setattr(chunker, "_vad_detector_cache", None)
+        monkeypatch.setattr(chunker, "_vad_cache", {})
 
     @pytest.fixture
     def broken_loaders(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -124,6 +131,31 @@ class TestLoadVadModel:
         model, detect = chunker.load_vad_model(allow_energy_fallback=True)
         assert model is None
         assert detect is chunker._energy_based_detector
+
+    def test_energy_backend_uses_energy_detector_directly(self) -> None:
+        model, detect = chunker.load_vad_model(backend="energy")
+        assert model is None
+        assert detect is chunker._energy_based_detector
+
+    def test_pyannote_backend_uses_configured_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        sentinel = object()
+        calls: list[tuple[str, str | None]] = []
+
+        def fake_pyannote_loader(model_name: str, hf_token: str | None) -> tuple[object, object]:
+            calls.append((model_name, hf_token))
+            return sentinel, all_speech_detect
+
+        monkeypatch.setattr(chunker, "_load_vad_from_pyannote", fake_pyannote_loader)
+
+        model, detect = chunker.load_vad_model(
+            backend="pyannote",
+            pyannote_model="org/custom-vad",
+            hf_token="secret",
+        )
+
+        assert model is sentinel
+        assert detect is all_speech_detect
+        assert calls == [("org/custom-vad", "secret")]
 
     def test_uses_first_working_loader_and_caches_result(
         self, monkeypatch: pytest.MonkeyPatch
@@ -146,6 +178,27 @@ class TestLoadVadModel:
         model_again, detect_again = chunker.load_vad_model()
         assert model_again is sentinel
         assert detect_again is all_speech_detect
+
+
+class TestPyannoteTimestampAdapter:
+    def test_converts_pyannote_timeline_to_sample_offsets(self) -> None:
+        class Segment:
+            def __init__(self, start: float, end: float) -> None:
+                self.start = start
+                self.end = end
+
+        class Timeline:
+            def support(self) -> list[Segment]:
+                return [Segment(0.25, 1.0), Segment(1.5, 2.0)]
+
+        class Output:
+            def get_timeline(self) -> Timeline:
+                return Timeline()
+
+        assert chunker._pyannote_output_to_timestamps(Output(), SR) == [
+            {"start": 4000, "end": 16000},
+            {"start": 24000, "end": 32000},
+        ]
 
 
 class TestChunkAudioWithVad:
@@ -239,7 +292,9 @@ class TestChunkFile:
     ) -> None:
         source = make_sine_wav(tmp_path / "clip.wav", duration=2.0)
 
-        def raise_chunking_error(allow_energy_fallback: bool = False) -> tuple[object, object]:
+        def raise_chunking_error(
+            allow_energy_fallback: bool = False, **kwargs: object
+        ) -> tuple[object, object]:
             raise chunker.ChunkingError("<vad model>", "no model available")
 
         monkeypatch.setattr(chunker, "load_vad_model", raise_chunking_error)
@@ -354,7 +409,9 @@ class TestChunkBatch:
         via `load_vad_model` when not called with an explicit override.
         """
         monkeypatch.setattr(
-            chunker, "load_vad_model", lambda allow_energy_fallback=False: (None, all_speech_detect)
+            chunker,
+            "load_vad_model",
+            lambda allow_energy_fallback=False, **kwargs: (None, all_speech_detect),
         )
 
     def test_mirrors_input_subdirectory_structure(self, tmp_path: Path) -> None:

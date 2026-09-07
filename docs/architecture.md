@@ -7,6 +7,7 @@ The package is intentionally small and module-oriented.
 ├── config.py       # conversion configuration
 ├── converter.py    # discovery and FFmpeg conversion
 ├── chunker.py      # VAD chunking
+├── profiler.py     # runtime resource profiles
 ├── validator.py    # output validation and duration probing
 ├── manifest.py     # JSONL manifest records and writer
 └── exceptions.py   # package exceptions</code></pre>
@@ -32,6 +33,13 @@ checked for sample rate, channel count, readability, and minimum duration.
 
 ## Chunking Dependencies
 
-The base package includes Torch, Silero VAD, and tqdm so both `convert` and
-`chunk` are ready after `pip install audio-prep-pipeline`. Chunker imports are
-still lazy, so conversion-only commands avoid VAD startup cost.
+The base package includes Torch, Silero VAD, Pyannote, and tqdm so both
+`convert` and `chunk` are ready after `pip install audio-prep-pipeline`.
+Chunker imports are still lazy, so conversion-only commands avoid VAD startup
+cost.
+
+## Profiling
+
+The profiler uses the standard library to record wall time, CPU time, child
+process CPU time, and peak RSS. CLI reports are JSON so model-backend timing
+runs can be compared outside the package.

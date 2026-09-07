@@ -18,6 +18,7 @@ from audio_prep.chunker import SUPPORTED_CHUNK_FORMATS
 from audio_prep.config import SUPPORTED_OUTPUT_FORMATS, ConversionConfig
 from audio_prep.converter import DEFAULT_SOURCE_EXTENSIONS, convert_batch, find_audio_files
 from audio_prep.manifest import build_manifest, write_manifest
+from audio_prep.profiler import JsonPrimitive, Profiler
 from audio_prep.validator import validate_output
 
 logger = logging.getLogger("audio_prep")
@@ -73,6 +74,7 @@ def _build_parser() -> argparse.ArgumentParser:
     convert.add_argument(
         "--manifest", type=Path, default=None, help="path to write a JSONL manifest"
     )
+    convert.add_argument("--profile", type=Path, default=None, help="path to write a JSON profile")
 
     chunk = sub.add_parser("chunk", help="run VAD speech chunking directly against source audio")
     chunk.add_argument("--input-dir", type=Path, required=True, help="directory of source audio")
@@ -101,18 +103,36 @@ def _build_parser() -> argparse.ArgumentParser:
     chunk.add_argument("--workers", type=int, default=4)
     chunk.add_argument("--overwrite", action="store_true")
     chunk.add_argument(
+        "--vad-backend",
+        choices=("silero", "pyannote", "energy"),
+        default="silero",
+        help="VAD backend to use for speech detection",
+    )
+    chunk.add_argument(
+        "--pyannote-model",
+        default="pyannote/voice-activity-detection",
+        help="Hugging Face model id used when --vad-backend pyannote",
+    )
+    chunk.add_argument(
+        "--hf-token",
+        default=None,
+        help="Hugging Face token for gated pyannote models; falls back to HF_TOKEN",
+    )
+    chunk.add_argument(
         "--allow-energy-fallback",
         action="store_true",
-        help="fall back to a low-quality energy-based detector if Silero VAD can't be loaded",
+        help="fall back to a low-quality energy-based detector if the selected VAD can't load",
     )
     chunk.add_argument(
         "--manifest", type=Path, default=None, help="path to write a JSONL chunk manifest"
     )
+    chunk.add_argument("--profile", type=Path, default=None, help="path to write a JSON profile")
 
     return parser
 
 
 def run_convert(args: argparse.Namespace) -> int:
+    profiler = Profiler()
     config = ConversionConfig(
         output_format=args.format,
         sample_rate=args.sample_rate,
@@ -123,26 +143,53 @@ def run_convert(args: argparse.Namespace) -> int:
         normalize_loudness=args.normalize_loudness,
     )
 
-    files = find_audio_files(args.input_dir, args.extensions)
+    with profiler.measure(
+        "discover",
+        {"input_dir": str(args.input_dir), "extensions": _extensions_label(args.extensions)},
+    ):
+        files = find_audio_files(args.input_dir, args.extensions)
     logger.info("Found %d source file(s) under %s", len(files), args.input_dir)
 
-    results = convert_batch(args.input_dir, args.output_dir, config, source_files=files)
+    with profiler.measure("convert", {"file_count": len(files), "workers": args.workers}):
+        results = convert_batch(args.input_dir, args.output_dir, config, source_files=files)
     n_ok = sum(1 for r in results if r.success)
     logger.info("Conversion: %d/%d succeeded", n_ok, len(results))
 
-    validations = {
-        r.output: validate_output(r.output, config) for r in results if r.success and r.output
-    }
+    with profiler.measure("validate", {"file_count": n_ok}):
+        validations = {
+            r.output: validate_output(r.output, config) for r in results if r.success and r.output
+        }
     n_valid = sum(1 for v in validations.values() if v.valid)
     logger.info("Validation: %d/%d passed", n_valid, len(validations))
 
     if args.manifest:
-        records = build_manifest(results, validations)
-        write_manifest(records, args.manifest)
+        with profiler.measure("manifest", {"path": str(args.manifest)}):
+            records = build_manifest(results, validations)
+            write_manifest(records, args.manifest)
         logger.info("Manifest written to %s (%d records)", args.manifest, len(records))
 
     n_failed = len(results) - n_valid
-    return 1 if n_failed else 0
+    exit_code = 1 if n_failed else 0
+    if args.profile:
+        _write_profile(
+            profiler,
+            args.profile,
+            "convert",
+            {
+                "input_dir": str(args.input_dir),
+                "output_dir": str(args.output_dir),
+                "output_format": args.format,
+                "sample_rate": args.sample_rate,
+                "channels": args.channels,
+                "workers": args.workers,
+                "files": len(results),
+                "successful_files": n_ok,
+                "valid_files": n_valid,
+                "failed_files": n_failed,
+                "exit_code": exit_code,
+            },
+        )
+    return exit_code
 
 
 def run_chunk(args: argparse.Namespace) -> int:
@@ -150,6 +197,7 @@ def run_chunk(args: argparse.Namespace) -> int:
     from audio_prep.chunker import ChunkConfig, chunk_batch
 
     output_dir = args.output_dir or (args.input_dir / "chunks")
+    profiler = Profiler()
     config = ChunkConfig(
         min_duration_sec=args.min_duration_sec,
         max_duration_sec=args.max_duration_sec,
@@ -158,12 +206,23 @@ def run_chunk(args: argparse.Namespace) -> int:
         num_workers=args.workers,
         overwrite=args.overwrite,
         allow_energy_fallback=args.allow_energy_fallback,
+        vad_backend=args.vad_backend,
+        pyannote_model=args.pyannote_model,
+        hf_token=args.hf_token,
     )
 
-    files = find_audio_files(args.input_dir, args.extensions)
+    with profiler.measure(
+        "discover",
+        {"input_dir": str(args.input_dir), "extensions": _extensions_label(args.extensions)},
+    ):
+        files = find_audio_files(args.input_dir, args.extensions)
     logger.info("Found %d source file(s) under %s", len(files), args.input_dir)
 
-    results = chunk_batch(args.input_dir, output_dir, config, source_files=files)
+    with profiler.measure(
+        "chunk",
+        {"file_count": len(files), "workers": args.workers, "vad_backend": args.vad_backend},
+    ):
+        results = chunk_batch(args.input_dir, output_dir, config, source_files=files)
     n_ok = sum(1 for r in results if r.success)
     n_chunks = sum(len(r.chunks) for r in results)
     logger.info(
@@ -177,11 +236,47 @@ def run_chunk(args: argparse.Namespace) -> int:
     if args.manifest:
         from audio_prep.manifest import build_chunk_manifest, write_manifest
 
-        records = build_chunk_manifest(results)
-        write_manifest(records, args.manifest)
+        with profiler.measure("manifest", {"path": str(args.manifest)}):
+            records = build_chunk_manifest(results)
+            write_manifest(records, args.manifest)
         logger.info("Manifest written to %s (%d records)", args.manifest, len(records))
 
-    return 1 if n_ok < len(results) else 0
+    exit_code = 1 if n_ok < len(results) else 0
+    if args.profile:
+        _write_profile(
+            profiler,
+            args.profile,
+            "chunk",
+            {
+                "input_dir": str(args.input_dir),
+                "output_dir": str(output_dir),
+                "output_format": args.format,
+                "sample_rate": args.sample_rate,
+                "workers": args.workers,
+                "vad_backend": args.vad_backend,
+                "pyannote_model": args.pyannote_model if args.vad_backend == "pyannote" else None,
+                "files": len(results),
+                "successful_files": n_ok,
+                "failed_files": len(results) - n_ok,
+                "chunks": n_chunks,
+                "exit_code": exit_code,
+            },
+        )
+    return exit_code
+
+
+def _extensions_label(extensions: tuple[str, ...] | None) -> str:
+    return "all" if extensions is None else ",".join(extensions)
+
+
+def _write_profile(
+    profiler: Profiler,
+    path: Path,
+    operation: str,
+    metadata: dict[str, JsonPrimitive],
+) -> None:
+    profiler.write_json(path, operation=operation, metadata=metadata)
+    logger.info("Profile written to %s", path)
 
 
 def main(argv: list[str] | None = None) -> int:
