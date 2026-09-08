@@ -9,9 +9,11 @@ The default detector is Silero VAD. The project tries to load Silero from the
 installed `silero-vad` package first, then from `torch.hub`.
 
 Pyannote is also available for comparison by setting `vad_backend="pyannote"` in
-Python or `--vad-backend pyannote` in the CLI. Some Pyannote models require a
-Hugging Face token and accepted model terms, so pass `--hf-token` or set
-`HF_TOKEN`/`HUGGINGFACE_TOKEN` when needed.
+Python or `--vad-backend pyannote` in the CLI. The default Pyannote model is
+`pyannote/speaker-diarization-community-1`, which is compatible with
+`pyannote.audio` 4.x. Some Pyannote models require a Hugging Face token and
+accepted model terms, so pass `--hf-token` or set `HF_TOKEN`/`HUGGINGFACE_TOKEN`
+when needed.
 
 If the selected detector is unavailable and `allow_energy_fallback=True`,
 chunking uses a simple energy-based detector. This fallback is useful for
@@ -61,7 +63,7 @@ Pyannote comparison:
     --output-dir data/chunks-pyannote \
     --sample-rate 16000 \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -103,7 +105,7 @@ config = ChunkConfig(
     sample_rate=16_000,
     num_workers=1,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )
 
 with profiler.measure(&quot;chunk-pyannote&quot;, {&quot;vad_backend&quot;: config.vad_backend}):

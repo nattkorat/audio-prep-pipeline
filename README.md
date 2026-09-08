@@ -236,7 +236,8 @@ write_manifest(records, Path("data/chunk_manifest.jsonl"))
 | `--workers` | 4 | parallel chunking workers |
 | `--overwrite` | off | re-chunk even if valid output already exists |
 | `--vad-backend` | `silero` | speech detector backend: `silero`, `pyannote`, or `energy` |
-| `--pyannote-model` | `pyannote/voice-activity-detection` | Hugging Face model id used with `--vad-backend pyannote` |
+| `--pyannote-model` | `pyannote/speaker-diarization-community-1` | Hugging Face model id used with `--vad-backend pyannote` |
+| `--pyannote-revision` | none | optional Hugging Face model revision; `repo/model@revision` is also accepted |
 | `--hf-token` | none | Hugging Face token for gated Pyannote models; falls back to `HF_TOKEN` or `HUGGINGFACE_TOKEN` |
 | `--allow-energy-fallback` | off | fall back to a low-quality energy detector if the selected VAD can't load, instead of raising |
 | `--manifest` | none | path to write a JSONL chunk manifest (source file, status, chunk count/paths) |
@@ -249,7 +250,7 @@ audio-prep chunk \
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json
 ```

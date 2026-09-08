@@ -114,7 +114,7 @@ Pyannote comparison:
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --profile profiles/chunk-pyannote.json</code></pre>
 
 ## Resume Behavior

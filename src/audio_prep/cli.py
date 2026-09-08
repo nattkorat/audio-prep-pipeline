@@ -110,13 +110,20 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     chunk.add_argument(
         "--pyannote-model",
-        default="pyannote/voice-activity-detection",
+        default="pyannote/speaker-diarization-community-1",
         help="Hugging Face model id used when --vad-backend pyannote",
+    )
+    chunk.add_argument(
+        "--pyannote-revision",
+        default=None,
+        help="optional Hugging Face revision used when --vad-backend pyannote",
     )
     chunk.add_argument(
         "--hf-token",
         default=None,
-        help="Hugging Face token for gated pyannote models; falls back to HF_TOKEN",
+        help=(
+            "Hugging Face token for gated pyannote models; falls back to HF_TOKEN/HUGGINGFACE_TOKEN"
+        ),
     )
     chunk.add_argument(
         "--allow-energy-fallback",
@@ -208,6 +215,7 @@ def run_chunk(args: argparse.Namespace) -> int:
         allow_energy_fallback=args.allow_energy_fallback,
         vad_backend=args.vad_backend,
         pyannote_model=args.pyannote_model,
+        pyannote_revision=args.pyannote_revision,
         hf_token=args.hf_token,
     )
 
@@ -255,6 +263,9 @@ def run_chunk(args: argparse.Namespace) -> int:
                 "workers": args.workers,
                 "vad_backend": args.vad_backend,
                 "pyannote_model": args.pyannote_model if args.vad_backend == "pyannote" else None,
+                "pyannote_revision": (
+                    args.pyannote_revision if args.vad_backend == "pyannote" else None
+                ),
                 "files": len(results),
                 "successful_files": n_ok,
                 "failed_files": len(results) - n_ok,

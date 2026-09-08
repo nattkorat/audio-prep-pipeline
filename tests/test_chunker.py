@@ -141,8 +141,10 @@ class TestLoadVadModel:
         sentinel = object()
         calls: list[tuple[str, str | None]] = []
 
-        def fake_pyannote_loader(model_name: str, hf_token: str | None) -> tuple[object, object]:
-            calls.append((model_name, hf_token))
+        def fake_pyannote_loader(
+            model_name: str, revision: str | None, hf_token: str | None
+        ) -> tuple[object, object]:
+            calls.append((f"{model_name}@{revision}", hf_token))
             return sentinel, all_speech_detect
 
         monkeypatch.setattr(chunker, "_load_vad_from_pyannote", fake_pyannote_loader)
@@ -150,12 +152,23 @@ class TestLoadVadModel:
         model, detect = chunker.load_vad_model(
             backend="pyannote",
             pyannote_model="org/custom-vad",
+            pyannote_revision="main",
             hf_token="secret",
         )
 
         assert model is sentinel
         assert detect is all_speech_detect
-        assert calls == [("org/custom-vad", "secret")]
+        assert calls == [("org/custom-vad@main", "secret")]
+
+    def test_splits_inline_model_revision(self) -> None:
+        assert chunker._split_model_revision("org/custom-vad@v1", None) == (
+            "org/custom-vad",
+            "v1",
+        )
+
+    def test_rejects_duplicate_model_revision(self) -> None:
+        with pytest.raises(ValueError, match="revision"):
+            chunker._split_model_revision("org/custom-vad@v1", "main")
 
     def test_uses_first_working_loader_and_caches_result(
         self, monkeypatch: pytest.MonkeyPatch

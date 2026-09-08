@@ -56,7 +56,8 @@ Invalid values raise `ValueError`.
 | `overwrite` | `False` | Force regeneration of valid existing chunks. |
 | `allow_energy_fallback` | `False` | Use the energy detector if the selected VAD cannot load. |
 | `vad_backend` | `silero` | Speech detector backend: `silero`, `pyannote`, or `energy`. |
-| `pyannote_model` | `pyannote/voice-activity-detection` | Hugging Face model id used with `vad_backend=&quot;pyannote&quot;`. |
+| `pyannote_model` | `pyannote/speaker-diarization-community-1` | Hugging Face model id used with `vad_backend=&quot;pyannote&quot;`. |
+| `pyannote_revision` | `None` | Optional Hugging Face model revision. `repo/model@revision` is also accepted. |
 | `hf_token` | `None` | Hugging Face token for gated Pyannote models. Falls back to `HF_TOKEN` or `HUGGINGFACE_TOKEN`. |
 
 CLI:
@@ -96,7 +97,7 @@ Pyannote comparison:
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -108,5 +109,5 @@ Python:
 config = ChunkConfig(
     sample_rate=16_000,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )</code></pre>

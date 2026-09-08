@@ -14,7 +14,8 @@ Configuration dataclass for VAD chunking.
 | `overwrite` | `bool` | `False` |
 | `allow_energy_fallback` | `bool` | `False` |
 | `vad_backend` | `str` | `silero` |
-| `pyannote_model` | `str` | `pyannote/voice-activity-detection` |
+| `pyannote_model` | `str` | `pyannote/speaker-diarization-community-1` |
+| `pyannote_revision` | `Optional[str]` | `None` |
 | `hf_token` | `Optional[str]` | `None` |
 
 Supported VAD backends are `silero`, `pyannote`, and `energy`.
@@ -66,6 +67,6 @@ config = ChunkConfig(
     max_duration_sec=20,
     sample_rate=16_000,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks-pyannote&quot;), config)</code></pre>

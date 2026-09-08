@@ -329,6 +329,8 @@ class TestCliChunk:
                 "pyannote",
                 "--pyannote-model",
                 "org/custom-vad",
+                "--pyannote-revision",
+                "main",
                 "--profile",
                 str(profile_path),
             ]
@@ -339,4 +341,5 @@ class TestCliChunk:
         assert profile["operation"] == "chunk"
         assert profile["metadata"]["vad_backend"] == "pyannote"
         assert profile["metadata"]["pyannote_model"] == "org/custom-vad"
+        assert profile["metadata"]["pyannote_revision"] == "main"
         assert profile["metadata"]["chunks"] == 1

@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_CHUNK_FORMATS = ("wav", "flac")
 SUPPORTED_VAD_BACKENDS = ("silero", "pyannote", "energy")
-DEFAULT_PYANNOTE_MODEL = "pyannote/voice-activity-detection"
+DEFAULT_PYANNOTE_MODEL = "pyannote/speaker-diarization-community-1"
 VadBackend: TypeAlias = Literal["silero", "pyannote", "energy"]
 
 _vad_cache: dict[tuple[str, str | None, bool], tuple[Any, Callable[..., Any]]] = {}
@@ -68,6 +68,7 @@ class ChunkConfig:
     allow_energy_fallback: bool = False
     vad_backend: str = "silero"
     pyannote_model: str = DEFAULT_PYANNOTE_MODEL
+    pyannote_revision: str | None = None
     hf_token: str | None = None
 
     def __post_init__(self) -> None:
@@ -140,22 +141,23 @@ def _load_vad_from_torch_hub() -> tuple[Any, Callable[..., Any]]:
 
 def _load_vad_from_pyannote(
     model_name: str,
+    revision: str | None,
     hf_token: str | None,
 ) -> tuple[Any, Callable[..., Any]]:
     import torch
     from pyannote.audio import Pipeline
 
     from_pretrained: Callable[..., Any] = Pipeline.from_pretrained
-    kwargs = {"token": hf_token} if hf_token else {}
-    try:
-        pipeline_model = from_pretrained(model_name, **kwargs)
-    except TypeError:
-        if not hf_token:
-            raise
-        pipeline_model = from_pretrained(model_name, use_auth_token=hf_token)
+    checkpoint, resolved_revision = _split_model_revision(model_name, revision)
+    pipeline_model = from_pretrained(
+        checkpoint=checkpoint,
+        revision=resolved_revision,
+        token=hf_token,
+    )
     if pipeline_model is None:
         raise RuntimeError(
-            f"pyannote.audio could not load {model_name!r}; check model access and token"
+            f"pyannote.audio could not load {checkpoint!r}; if the model is gated, "
+            "accept its Hugging Face terms and pass --hf-token or set HF_TOKEN"
         )
     pipeline = cast(Callable[[dict[str, Any]], Any], pipeline_model)
 
@@ -168,6 +170,17 @@ def _load_vad_from_pyannote(
         return _pyannote_output_to_timestamps(output, sampling_rate)
 
     return pipeline_model, detect
+
+
+def _split_model_revision(model_name: str, revision: str | None) -> tuple[str, str | None]:
+    if "@" not in model_name:
+        return model_name, revision
+    if revision is not None:
+        raise ValueError("Pass the Pyannote model revision only once")
+    checkpoint, parsed_revision = model_name.rsplit("@", maxsplit=1)
+    if not checkpoint or not parsed_revision:
+        raise ValueError("Pyannote model revision must use the form 'repo/model@revision'")
+    return checkpoint, parsed_revision
 
 
 def _pyannote_output_to_timestamps(output: Any, sampling_rate: int) -> list[dict[str, int]]:
@@ -237,6 +250,7 @@ def load_vad_model(
     *,
     backend: str = "silero",
     pyannote_model: str = DEFAULT_PYANNOTE_MODEL,
+    pyannote_revision: str | None = None,
     hf_token: str | None = None,
 ) -> tuple[Any, Callable[..., Any]]:
     """Load (and process-wide cache) a VAD speech-timestamp detector.
@@ -254,7 +268,7 @@ def load_vad_model(
         raise ValueError(f"backend must be one of {SUPPORTED_VAD_BACKENDS}, got {backend!r}")
 
     resolved_token = hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
-    model_key = pyannote_model if backend == "pyannote" else None
+    model_key = f"{pyannote_model}@{pyannote_revision}" if backend == "pyannote" else None
     token_present = bool(resolved_token) if backend == "pyannote" else False
     cache_key = (backend, model_key, token_present)
     if cache_key in _vad_cache:
@@ -280,7 +294,11 @@ def load_vad_model(
                 errors.append(f"{name}: {exc}")
     elif backend == "pyannote":
         try:
-            model, detect = _load_vad_from_pyannote(pyannote_model, resolved_token)
+            model, detect = _load_vad_from_pyannote(
+                pyannote_model,
+                pyannote_revision,
+                resolved_token,
+            )
         except Exception as exc:  # noqa: BLE001 - surface optional backend load errors clearly
             errors.append(f"pyannote.audio model {pyannote_model!r}: {exc}")
 
@@ -326,6 +344,7 @@ def chunk_audio_with_vad(
             allow_energy_fallback=config.allow_energy_fallback,
             backend=config.vad_backend,
             pyannote_model=config.pyannote_model,
+            pyannote_revision=config.pyannote_revision,
             hf_token=config.hf_token,
         )
 
@@ -517,6 +536,7 @@ def chunk_batch(
         allow_energy_fallback=config.allow_energy_fallback,
         backend=config.vad_backend,
         pyannote_model=config.pyannote_model,
+        pyannote_revision=config.pyannote_revision,
         hf_token=config.hf_token,
     )
 

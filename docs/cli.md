@@ -69,7 +69,7 @@ Compare with Pyannote:
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -86,7 +86,8 @@ Compare with Pyannote:
 | `--workers` | `4` | Number of parallel chunking workers. |
 | `--overwrite` | off | Rebuild even when an existing chunk is valid. |
 | `--vad-backend` | `silero` | Speech detector backend: `silero`, `pyannote`, or `energy`. |
-| `--pyannote-model` | `pyannote/voice-activity-detection` | Hugging Face model id used with `--vad-backend pyannote`. |
+| `--pyannote-model` | `pyannote/speaker-diarization-community-1` | Hugging Face model id used with `--vad-backend pyannote`. |
+| `--pyannote-revision` | none | Optional Hugging Face model revision. `repo/model@revision` is also accepted. |
 | `--hf-token` | none | Hugging Face token for gated Pyannote models. Falls back to `HF_TOKEN` or `HUGGINGFACE_TOKEN`. |
 | `--allow-energy-fallback` | off | Use a lower-quality energy detector if the selected VAD backend cannot load. |
 | `--manifest` | none | Path to write chunk manifest JSONL. |
