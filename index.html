@@ -1493,6 +1493,7 @@
 can optionally split speech into VAD-based chunks. It is designed for dataset
 preparation before self-supervised speech pretraining workflows such as
 Wav2Vec2 and XLS-R.</p>
+<p><img alt="Audio preprocessing pipeline" src="assets/images/audio_prep_pipeline.png" /></p>
 <p>Default converted output:</p>
 <table>
 <thead>
@@ -1529,7 +1530,7 @@ Wav2Vec2 and XLS-R.</p>
 <li>Recursively discovers supported source audio files.</li>
 <li>Decodes audio with FFmpeg.</li>
 <li>Detects speech with Silero VAD by default, with Pyannote and energy backends available.</li>
-<li>Writes speech-only WAV or FLAC chunks.</li>
+<li>Writes speech-focused WAV or FLAC chunks.</li>
 <li>Writes an optional JSONL chunk manifest.</li>
 </ol>
 <h2 id="why-this-exists">Why This Exists<a class="headerlink" href="#why-this-exists" title="Permanent link">&para;</a></h2>
@@ -1571,6 +1572,7 @@ write_manifest(records, Path(&quot;data/manifest.jsonl&quot;))</code></pre>
     --vad-backend silero \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --manifest data/chunk_manifest.jsonl \
     --profile profiles/chunk-silero.json</code></pre>
 
@@ -1579,7 +1581,12 @@ write_manifest(records, Path(&quot;data/manifest.jsonl&quot;))</code></pre>
 
 from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
-config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, vad_backend=&quot;silero&quot;)
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    merge_gap_sec=1.0,
+    vad_backend=&quot;silero&quot;,
+)
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>
@@ -1589,7 +1596,7 @@ write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --profile profiles/chunk-pyannote.json</code></pre>
 
 <h2 id="start-here">Start Here<a class="headerlink" href="#start-here" title="Permanent link">&para;</a></h2>

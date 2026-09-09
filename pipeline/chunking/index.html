@@ -1518,15 +1518,18 @@
 
 
 <h1 id="chunking">Chunking<a class="headerlink" href="#chunking" title="Permanent link">&para;</a></h1>
-<p>Chunking splits source audio into speech-only chunks. It is implemented in
+<p>Chunking splits source audio into speech-focused chunks. It is implemented in
 <code>audio_prep.chunker</code> and exposed through <code>audio-prep chunk</code>.</p>
+<p><img alt="Speech segmentation" src="../../assets/images/speech_segmentation.png" /></p>
 <h2 id="detector">Detector<a class="headerlink" href="#detector" title="Permanent link">&para;</a></h2>
 <p>The default detector is Silero VAD. The project tries to load Silero from the
 installed <code>silero-vad</code> package first, then from <code>torch.hub</code>.</p>
 <p>Pyannote is also available for comparison by setting <code>vad_backend="pyannote"</code> in
-Python or <code>--vad-backend pyannote</code> in the CLI. Some Pyannote models require a
-Hugging Face token and accepted model terms, so pass <code>--hf-token</code> or set
-<code>HF_TOKEN</code>/<code>HUGGINGFACE_TOKEN</code> when needed.</p>
+Python or <code>--vad-backend pyannote</code> in the CLI. The default Pyannote model is
+<code>pyannote/speaker-diarization-community-1</code>, which is compatible with
+<code>pyannote.audio</code> 4.x. Some Pyannote models require a Hugging Face token and
+accepted model terms, so pass <code>--hf-token</code> or set <code>HF_TOKEN</code>/<code>HUGGINGFACE_TOKEN</code>
+when needed.</p>
 <p>If the selected detector is unavailable and <code>allow_energy_fallback=True</code>,
 chunking uses a simple energy-based detector. This fallback is useful for
 offline testing but is lower quality than model-based VAD.</p>
@@ -1537,8 +1540,15 @@ be read directly with <code>soundfile</code> when no resampling is needed.</p>
 chunks use that rate.</p>
 <h2 id="duration-rules">Duration Rules<a class="headerlink" href="#duration-rules" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Speech shorter than <code>min_duration_sec</code> is dropped.</li>
-<li>Speech longer than <code>max_duration_sec</code> is split into windows.</li>
+<li>VAD speech spans separated by at most <code>merge_gap_sec</code> are packed together.</li>
+<li>Short speech is kept when it can be packed into a chunk at least
+  <code>min_duration_sec</code> long.</li>
+<li>Once a packed span already satisfies <code>min_duration_sec</code>, it is emitted before
+  adding another span that would exceed <code>max_duration_sec</code>.</li>
+<li>Long speech is split into balanced windows so a short final tail is not
+  dropped.</li>
+<li>Speech shorter than <code>min_duration_sec</code> is dropped only when it cannot be
+  packed with nearby speech.</li>
 <li>A source file that produces no chunks returns a failed <code>ChunkResult</code>.</li>
 </ul>
 <h2 id="existing-chunks">Existing Chunks<a class="headerlink" href="#existing-chunks" title="Permanent link">&para;</a></h2>
@@ -1555,6 +1565,7 @@ match the expected sample rate. Corrupt existing chunks are rewritten.</p>
     --sample-rate 16000 \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --manifest data/chunk_manifest.jsonl \
     --profile profiles/chunk-silero.json</code></pre>
@@ -1565,7 +1576,7 @@ match the expected sample rate. Corrupt existing chunks are rewritten.</p>
     --output-dir data/chunks-pyannote \
     --sample-rate 16000 \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -1577,6 +1588,7 @@ from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_man
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     output_format=&quot;flac&quot;,
     sample_rate=16_000,
     num_workers=4,
@@ -1600,10 +1612,11 @@ profiler = Profiler()
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     sample_rate=16_000,
     num_workers=1,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )
 
 with profiler.measure(&quot;chunk-pyannote&quot;, {&quot;vad_backend&quot;: config.vad_backend}):

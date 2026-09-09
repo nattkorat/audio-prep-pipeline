@@ -1437,7 +1437,7 @@
 <ul>
 <li><code>convert</code>: convert source audio files to WAV or FLAC, validate them, and optionally
   write a manifest.</li>
-<li><code>chunk</code>: split source audio files into speech-only chunks and optionally write a
+<li><code>chunk</code>: split source audio files into speech-focused chunks and optionally write a
   chunk manifest.</li>
 </ul>
 <h2 id="audio-prep-convert"><code>audio-prep convert</code><a class="headerlink" href="#audio-prep-convert" title="Permanent link">&para;</a></h2>
@@ -1554,6 +1554,7 @@
     --sample-rate 16000 \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --manifest data/chunk_manifest.jsonl \
     --profile profiles/chunk-silero.json</code></pre>
@@ -1563,7 +1564,7 @@
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -1604,12 +1605,17 @@
 <tr>
 <td><code>--min-duration-sec</code></td>
 <td style="text-align: right;"><code>5.0</code></td>
-<td>Drop chunks shorter than this duration.</td>
+<td>Minimum target chunk duration after nearby speech spans are packed.</td>
 </tr>
 <tr>
 <td><code>--max-duration-sec</code></td>
 <td style="text-align: right;"><code>20.0</code></td>
-<td>Split longer speech into windows no longer than this.</td>
+<td>Maximum target chunk duration; long spans are split evenly to avoid short tails.</td>
+</tr>
+<tr>
+<td><code>--merge-gap-sec</code></td>
+<td style="text-align: right;"><code>1.0</code></td>
+<td>Silence budget for packing nearby VAD speech spans before applying duration rules.</td>
 </tr>
 <tr>
 <td><code>--workers</code></td>
@@ -1628,8 +1634,13 @@
 </tr>
 <tr>
 <td><code>--pyannote-model</code></td>
-<td style="text-align: right;"><code>pyannote/voice-activity-detection</code></td>
+<td style="text-align: right;"><code>pyannote/speaker-diarization-community-1</code></td>
 <td>Hugging Face model id used with <code>--vad-backend pyannote</code>.</td>
+</tr>
+<tr>
+<td><code>--pyannote-revision</code></td>
+<td style="text-align: right;">none</td>
+<td>Optional Hugging Face model revision. <code>repo/model@revision</code> is also accepted.</td>
 </tr>
 <tr>
 <td><code>--hf-token</code></td>

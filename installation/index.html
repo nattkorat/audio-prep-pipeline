@@ -1519,9 +1519,10 @@ and <code>tqdm</code>, so both <code>audio-prep convert</code> and <code>audio-p
 <pre><code>pip install audio-prep-pipeline</code></pre>
 
 <p>The first chunking run loads Silero from the installed <code>silero-vad</code> package by
-default. Use <code>--vad-backend pyannote</code> to compare with a Pyannote model. Some
-Pyannote models require a Hugging Face token and accepted model terms; pass
-<code>--hf-token</code> or set <code>HF_TOKEN</code>/<code>HUGGINGFACE_TOKEN</code>.</p>
+default. Use <code>--vad-backend pyannote</code> to compare with
+<code>pyannote/speaker-diarization-community-1</code>, the default Pyannote model for this
+package. Some Pyannote models require a Hugging Face token and accepted model
+terms; pass <code>--hf-token</code> or set <code>HF_TOKEN</code>/<code>HUGGINGFACE_TOKEN</code>.</p>
 <p>If the selected VAD backend cannot load in an offline environment, pass
 <code>--allow-energy-fallback</code> to use the lower-quality offline energy detector.</p>
 

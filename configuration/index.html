@@ -1514,12 +1514,17 @@ config = ConversionConfig(
 <tr>
 <td><code>min_duration_sec</code></td>
 <td style="text-align: right;"><code>5.0</code></td>
-<td>Drop chunks shorter than this duration.</td>
+<td>Minimum target chunk duration after nearby speech spans are packed.</td>
 </tr>
 <tr>
 <td><code>max_duration_sec</code></td>
 <td style="text-align: right;"><code>20.0</code></td>
-<td>Split longer speech into windows at this duration.</td>
+<td>Maximum target chunk duration; long spans are split evenly to avoid short tails.</td>
+</tr>
+<tr>
+<td><code>merge_gap_sec</code></td>
+<td style="text-align: right;"><code>1.0</code></td>
+<td>Silence budget for packing nearby VAD speech spans before applying duration rules.</td>
 </tr>
 <tr>
 <td><code>output_format</code></td>
@@ -1553,8 +1558,13 @@ config = ConversionConfig(
 </tr>
 <tr>
 <td><code>pyannote_model</code></td>
-<td style="text-align: right;"><code>pyannote/voice-activity-detection</code></td>
+<td style="text-align: right;"><code>pyannote/speaker-diarization-community-1</code></td>
 <td>Hugging Face model id used with <code>vad_backend=&amp;quot;pyannote&amp;quot;</code>.</td>
+</tr>
+<tr>
+<td><code>pyannote_revision</code></td>
+<td style="text-align: right;"><code>None</code></td>
+<td>Optional Hugging Face model revision. <code>repo/model@revision</code> is also accepted.</td>
 </tr>
 <tr>
 <td><code>hf_token</code></td>
@@ -1571,6 +1581,7 @@ config = ConversionConfig(
     --sample-rate 16000 \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --vad-backend silero \
     --profile profiles/chunk-silero.json</code></pre>
@@ -1581,6 +1592,7 @@ config = ConversionConfig(
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     output_format=&quot;flac&quot;,
     sample_rate=16_000,
     num_workers=4,
@@ -1594,7 +1606,7 @@ default is <code>None</code>, which preserves the source sample rate.</p>
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -1603,8 +1615,9 @@ default is <code>None</code>, which preserves the source sample rate.</p>
 
 config = ChunkConfig(
     sample_rate=16_000,
+    merge_gap_sec=1.0,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )</code></pre>
 
 
