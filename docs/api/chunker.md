@@ -8,13 +8,15 @@ Configuration dataclass for VAD chunking.
 |---|---|---:|
 | `min_duration_sec` | `float` | `5.0` |
 | `max_duration_sec` | `float` | `20.0` |
+| `merge_gap_sec` | `float` | `1.0` |
 | `output_format` | `str` | `wav` |
 | `sample_rate` | `Optional[int]` | `None` |
 | `num_workers` | `int` | `1` |
 | `overwrite` | `bool` | `False` |
 | `allow_energy_fallback` | `bool` | `False` |
 | `vad_backend` | `str` | `silero` |
-| `pyannote_model` | `str` | `pyannote/voice-activity-detection` |
+| `pyannote_model` | `str` | `pyannote/speaker-diarization-community-1` |
+| `pyannote_revision` | `Optional[str]` | `None` |
 | `hf_token` | `Optional[str]` | `None` |
 
 Supported VAD backends are `silero`, `pyannote`, and `energy`.
@@ -47,6 +49,7 @@ from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_man
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     sample_rate=16_000,
     vad_backend=&quot;silero&quot;,
 )
@@ -64,8 +67,9 @@ from audio_prep import ChunkConfig, chunk_batch
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     sample_rate=16_000,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks-pyannote&quot;), config)</code></pre>

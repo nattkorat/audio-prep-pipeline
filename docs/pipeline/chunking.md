@@ -1,7 +1,9 @@
 # Chunking
 
-Chunking splits source audio into speech-only chunks. It is implemented in
+Chunking splits source audio into speech-focused chunks. It is implemented in
 `audio_prep.chunker` and exposed through `audio-prep chunk`.
+
+![Speech segmentation](../assets/images/speech_segmentation.png)
 
 ## Detector
 
@@ -9,9 +11,11 @@ The default detector is Silero VAD. The project tries to load Silero from the
 installed `silero-vad` package first, then from `torch.hub`.
 
 Pyannote is also available for comparison by setting `vad_backend="pyannote"` in
-Python or `--vad-backend pyannote` in the CLI. Some Pyannote models require a
-Hugging Face token and accepted model terms, so pass `--hf-token` or set
-`HF_TOKEN`/`HUGGINGFACE_TOKEN` when needed.
+Python or `--vad-backend pyannote` in the CLI. The default Pyannote model is
+`pyannote/speaker-diarization-community-1`, which is compatible with
+`pyannote.audio` 4.x. Some Pyannote models require a Hugging Face token and
+accepted model terms, so pass `--hf-token` or set `HF_TOKEN`/`HUGGINGFACE_TOKEN`
+when needed.
 
 If the selected detector is unavailable and `allow_energy_fallback=True`,
 chunking uses a simple energy-based detector. This fallback is useful for
@@ -27,8 +31,15 @@ chunks use that rate.
 
 ## Duration Rules
 
-- Speech shorter than `min_duration_sec` is dropped.
-- Speech longer than `max_duration_sec` is split into windows.
+- VAD speech spans separated by at most `merge_gap_sec` are packed together.
+- Short speech is kept when it can be packed into a chunk at least
+  `min_duration_sec` long.
+- Once a packed span already satisfies `min_duration_sec`, it is emitted before
+  adding another span that would exceed `max_duration_sec`.
+- Long speech is split into balanced windows so a short final tail is not
+  dropped.
+- Speech shorter than `min_duration_sec` is dropped only when it cannot be
+  packed with nearby speech.
 - A source file that produces no chunks returns a failed `ChunkResult`.
 
 ## Existing Chunks
@@ -49,6 +60,7 @@ If two source files in the same directory share a stem, such as `clip.mp3` and
     --sample-rate 16000 \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --manifest data/chunk_manifest.jsonl \
     --profile profiles/chunk-silero.json</code></pre>
@@ -61,7 +73,7 @@ Pyannote comparison:
     --output-dir data/chunks-pyannote \
     --sample-rate 16000 \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -75,6 +87,7 @@ from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_man
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     output_format=&quot;flac&quot;,
     sample_rate=16_000,
     num_workers=4,
@@ -100,10 +113,11 @@ profiler = Profiler()
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     sample_rate=16_000,
     num_workers=1,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )
 
 with profiler.measure(&quot;chunk-pyannote&quot;, {&quot;vad_backend&quot;: config.vad_backend}):

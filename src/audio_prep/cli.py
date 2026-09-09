@@ -100,6 +100,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     chunk.add_argument("--min-duration-sec", type=float, default=5.0)
     chunk.add_argument("--max-duration-sec", type=float, default=20.0)
+    chunk.add_argument(
+        "--merge-gap-sec",
+        type=float,
+        default=1.0,
+        help="silence budget for packing nearby VAD speech spans",
+    )
     chunk.add_argument("--workers", type=int, default=4)
     chunk.add_argument("--overwrite", action="store_true")
     chunk.add_argument(
@@ -110,13 +116,20 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     chunk.add_argument(
         "--pyannote-model",
-        default="pyannote/voice-activity-detection",
+        default="pyannote/speaker-diarization-community-1",
         help="Hugging Face model id used when --vad-backend pyannote",
+    )
+    chunk.add_argument(
+        "--pyannote-revision",
+        default=None,
+        help="optional Hugging Face revision used when --vad-backend pyannote",
     )
     chunk.add_argument(
         "--hf-token",
         default=None,
-        help="Hugging Face token for gated pyannote models; falls back to HF_TOKEN",
+        help=(
+            "Hugging Face token for gated pyannote models; falls back to HF_TOKEN/HUGGINGFACE_TOKEN"
+        ),
     )
     chunk.add_argument(
         "--allow-energy-fallback",
@@ -201,6 +214,7 @@ def run_chunk(args: argparse.Namespace) -> int:
     config = ChunkConfig(
         min_duration_sec=args.min_duration_sec,
         max_duration_sec=args.max_duration_sec,
+        merge_gap_sec=args.merge_gap_sec,
         output_format=args.format,
         sample_rate=args.sample_rate,
         num_workers=args.workers,
@@ -208,6 +222,7 @@ def run_chunk(args: argparse.Namespace) -> int:
         allow_energy_fallback=args.allow_energy_fallback,
         vad_backend=args.vad_backend,
         pyannote_model=args.pyannote_model,
+        pyannote_revision=args.pyannote_revision,
         hf_token=args.hf_token,
     )
 
@@ -252,9 +267,15 @@ def run_chunk(args: argparse.Namespace) -> int:
                 "output_dir": str(output_dir),
                 "output_format": args.format,
                 "sample_rate": args.sample_rate,
+                "min_duration_sec": args.min_duration_sec,
+                "max_duration_sec": args.max_duration_sec,
+                "merge_gap_sec": args.merge_gap_sec,
                 "workers": args.workers,
                 "vad_backend": args.vad_backend,
                 "pyannote_model": args.pyannote_model if args.vad_backend == "pyannote" else None,
+                "pyannote_revision": (
+                    args.pyannote_revision if args.vad_backend == "pyannote" else None
+                ),
                 "files": len(results),
                 "successful_files": n_ok,
                 "failed_files": len(results) - n_ok,

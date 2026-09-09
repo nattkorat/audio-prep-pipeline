@@ -48,15 +48,17 @@ Invalid values raise `ValueError`.
 
 | Field | Default | Meaning |
 |---|---:|---|
-| `min_duration_sec` | `5.0` | Drop chunks shorter than this duration. |
-| `max_duration_sec` | `20.0` | Split longer speech into windows at this duration. |
+| `min_duration_sec` | `5.0` | Minimum target chunk duration after nearby speech spans are packed. |
+| `max_duration_sec` | `20.0` | Maximum target chunk duration; long spans are split evenly to avoid short tails. |
+| `merge_gap_sec` | `1.0` | Silence budget for packing nearby VAD speech spans before applying duration rules. |
 | `output_format` | `wav` | Chunk format, `wav` or `flac`. |
 | `sample_rate` | `None` | Preserve native rate unless a target is supplied. |
 | `num_workers` | `1` | Parallel chunking workers for Python API use. |
 | `overwrite` | `False` | Force regeneration of valid existing chunks. |
 | `allow_energy_fallback` | `False` | Use the energy detector if the selected VAD cannot load. |
 | `vad_backend` | `silero` | Speech detector backend: `silero`, `pyannote`, or `energy`. |
-| `pyannote_model` | `pyannote/voice-activity-detection` | Hugging Face model id used with `vad_backend=&quot;pyannote&quot;`. |
+| `pyannote_model` | `pyannote/speaker-diarization-community-1` | Hugging Face model id used with `vad_backend=&quot;pyannote&quot;`. |
+| `pyannote_revision` | `None` | Optional Hugging Face model revision. `repo/model@revision` is also accepted. |
 | `hf_token` | `None` | Hugging Face token for gated Pyannote models. Falls back to `HF_TOKEN` or `HUGGINGFACE_TOKEN`. |
 
 CLI:
@@ -68,6 +70,7 @@ CLI:
     --sample-rate 16000 \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --vad-backend silero \
     --profile profiles/chunk-silero.json</code></pre>
@@ -80,6 +83,7 @@ Python:
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     output_format=&quot;flac&quot;,
     sample_rate=16_000,
     num_workers=4,
@@ -96,7 +100,7 @@ Pyannote comparison:
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -107,6 +111,7 @@ Python:
 
 config = ChunkConfig(
     sample_rate=16_000,
+    merge_gap_sec=1.0,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )</code></pre>

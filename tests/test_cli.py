@@ -329,6 +329,10 @@ class TestCliChunk:
                 "pyannote",
                 "--pyannote-model",
                 "org/custom-vad",
+                "--pyannote-revision",
+                "main",
+                "--merge-gap-sec",
+                "0.5",
                 "--profile",
                 str(profile_path),
             ]
@@ -339,4 +343,6 @@ class TestCliChunk:
         assert profile["operation"] == "chunk"
         assert profile["metadata"]["vad_backend"] == "pyannote"
         assert profile["metadata"]["pyannote_model"] == "org/custom-vad"
+        assert profile["metadata"]["pyannote_revision"] == "main"
+        assert profile["metadata"]["merge_gap_sec"] == 0.5
         assert profile["metadata"]["chunks"] == 1

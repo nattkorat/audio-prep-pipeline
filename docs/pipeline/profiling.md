@@ -28,7 +28,7 @@ Chunking with Pyannote:
     --input-dir data/raw_mp3 \
     --output-dir data/chunks-pyannote \
     --vad-backend pyannote \
-    --pyannote-model pyannote/voice-activity-detection \
+    --pyannote-model pyannote/speaker-diarization-community-1 \
     --hf-token "$HF_TOKEN" \
     --profile profiles/chunk-pyannote.json</code></pre>
 
@@ -50,7 +50,7 @@ config = ChunkConfig(
     sample_rate=16_000,
     num_workers=1,
     vad_backend=&quot;pyannote&quot;,
-    pyannote_model=&quot;pyannote/voice-activity-detection&quot;,
+    pyannote_model=&quot;pyannote/speaker-diarization-community-1&quot;,
 )
 
 with profiler.measure(&quot;chunk&quot;, {&quot;vad_backend&quot;: config.vad_backend}):

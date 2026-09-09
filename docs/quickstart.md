@@ -96,6 +96,7 @@ CLI:
     --output-dir data/chunks \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --vad-backend silero \
     --manifest data/chunk_manifest.jsonl \
@@ -111,6 +112,7 @@ from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_man
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     num_workers=4,
     vad_backend=&quot;silero&quot;,
 )
