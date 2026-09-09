@@ -9,7 +9,7 @@ It has two independent subcommands:
 
 - `convert`: convert source audio files to WAV or FLAC, validate them, and optionally
   write a manifest.
-- `chunk`: split source audio files into speech-only chunks and optionally write a
+- `chunk`: split source audio files into speech-focused chunks and optionally write a
   chunk manifest.
 
 ## `audio-prep convert`
@@ -58,6 +58,7 @@ Exit codes:
     --sample-rate 16000 \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --manifest data/chunk_manifest.jsonl \
     --profile profiles/chunk-silero.json</code></pre>
@@ -81,8 +82,9 @@ Compare with Pyannote:
 | `--extensions` | common FFmpeg audio/video extensions | Comma-separated source extensions, or `all` to pass every regular file to FFmpeg. |
 | `--format` | `wav` | Chunk format, `wav` or `flac`. |
 | `--sample-rate` | `16000` | Resample before VAD and chunk writing. |
-| `--min-duration-sec` | `5.0` | Drop chunks shorter than this duration. |
-| `--max-duration-sec` | `20.0` | Split longer speech into windows no longer than this. |
+| `--min-duration-sec` | `5.0` | Minimum target chunk duration after nearby speech spans are packed. |
+| `--max-duration-sec` | `20.0` | Maximum target chunk duration; long spans are split evenly to avoid short tails. |
+| `--merge-gap-sec` | `1.0` | Silence budget for packing nearby VAD speech spans before applying duration rules. |
 | `--workers` | `4` | Number of parallel chunking workers. |
 | `--overwrite` | off | Rebuild even when an existing chunk is valid. |
 | `--vad-backend` | `silero` | Speech detector backend: `silero`, `pyannote`, or `energy`. |

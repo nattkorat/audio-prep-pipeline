@@ -4,7 +4,7 @@ Pipeline stages:
     1. discovery   - find source audio files under an input directory
     2. conversion  - decode + resample + remix to a target WAV/FLAC spec
     3. validation  - sanity-check converted output (sample rate, duration, integrity)
-    4. chunking    - split into speech-only chunks via VAD
+    4. chunking    - split into speech-focused chunks via VAD
     5. manifest    - emit a JSONL manifest describing the resulting dataset
 """
 
@@ -38,7 +38,7 @@ from audio_prep.manifest import (
 from audio_prep.profiler import Profiler, ProfileRecord
 from audio_prep.validator import ValidationResult, validate_output
 
-__version__ = "0.1.5"
+__version__ = "0.1.7"
 
 __all__ = [
     "ConversionConfig",

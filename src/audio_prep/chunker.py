@@ -1,8 +1,9 @@
 """Voice-activity-based speech chunking.
 
 Ported from the ASR pretraining-data-prep pipeline. Splits source audio
-into speech-only chunks bounded by a [min, max] duration window, so
-silence-heavy source recordings don't waste pretraining compute.
+into speech-focused chunks near a [min, max] duration window, so
+silence-heavy source recordings don't waste pretraining compute while short
+pauses around speech are preserved.
 Decoding (and resampling, via `ChunkConfig.sample_rate`) is done with
 ffmpeg, the same as `converter.py`, so it doesn't depend on `soundfile`
 being built with support for every source container.
@@ -15,6 +16,7 @@ imports are deferred to first VAD use so conversion startup stays light.
 from __future__ import annotations
 
 import logging
+import math
 import os
 import subprocess
 import tempfile
@@ -61,6 +63,7 @@ class ChunkConfig:
 
     min_duration_sec: float = 5.0
     max_duration_sec: float = 20.0
+    merge_gap_sec: float = 1.0
     output_format: str = "wav"
     sample_rate: int | None = None
     num_workers: int = 1
@@ -84,6 +87,8 @@ class ChunkConfig:
                 "max_duration_sec must be >= min_duration_sec, got "
                 f"{self.max_duration_sec} < {self.min_duration_sec}"
             )
+        if self.merge_gap_sec < 0:
+            raise ValueError(f"merge_gap_sec must be >= 0, got {self.merge_gap_sec}")
         if self.sample_rate is not None and self.sample_rate <= 0:
             raise ValueError(f"sample_rate must be positive, got {self.sample_rate}")
         if self.num_workers <= 0:
@@ -198,6 +203,121 @@ def _pyannote_output_to_timestamps(output: Any, sampling_rate: int) -> list[dict
         if end > start:
             timestamps.append({"start": start, "end": end})
     return timestamps
+
+
+def _normalize_speech_timestamps(
+    timestamps: Iterable[dict[str, int]],
+    *,
+    audio_length: int,
+) -> list[tuple[int, int]]:
+    return sorted(
+        (
+            (max(0, int(timestamp["start"])), min(audio_length, int(timestamp["end"])))
+            for timestamp in timestamps
+        ),
+        key=lambda span: span[0],
+    )
+
+
+def _pack_speech_timestamps(
+    timestamps: Iterable[dict[str, int]],
+    *,
+    sampling_rate: int,
+    min_duration_sec: float,
+    max_duration_sec: float,
+    merge_gap_sec: float,
+    audio_length: int,
+) -> list[tuple[int, int]]:
+    """Pack nearby VAD spans into chunk windows before slicing audio.
+
+    `merge_gap_sec` decides whether adjacent speech spans are near enough to
+    belong to the same packing group. Within each group, splitting is balanced
+    by duration so under-min tails are folded into neighboring chunks instead
+    of being discarded.
+    """
+    spans = _normalize_speech_timestamps(timestamps, audio_length=audio_length)
+    if not spans:
+        return []
+
+    gap_samples = int(merge_gap_sec * sampling_rate)
+    min_samples = max(1, math.ceil(min_duration_sec * sampling_rate))
+    max_samples = max(1, int(max_duration_sec * sampling_rate))
+    packed: list[tuple[int, int]] = []
+    group_start: int | None = None
+    group_end: int | None = None
+
+    for start, end in spans:
+        if end <= start:
+            continue
+        if group_start is None or group_end is None:
+            group_start, group_end = start, end
+            continue
+
+        gap = start - group_end
+        candidate_end = max(group_end, end)
+        if gap <= gap_samples:
+            current_samples = group_end - group_start
+            candidate_samples = candidate_end - group_start
+            if current_samples >= min_samples and candidate_samples > max_samples:
+                packed.extend(
+                    _split_speech_span(
+                        group_start,
+                        group_end,
+                        sampling_rate=sampling_rate,
+                        min_duration_sec=min_duration_sec,
+                        max_duration_sec=max_duration_sec,
+                    )
+                )
+                group_start, group_end = start, end
+                continue
+
+            group_end = candidate_end
+            continue
+
+        packed.extend(
+            _split_speech_span(
+                group_start,
+                group_end,
+                sampling_rate=sampling_rate,
+                min_duration_sec=min_duration_sec,
+                max_duration_sec=max_duration_sec,
+            )
+        )
+        group_start, group_end = start, end
+
+    if group_start is not None and group_end is not None:
+        packed.extend(
+            _split_speech_span(
+                group_start,
+                group_end,
+                sampling_rate=sampling_rate,
+                min_duration_sec=min_duration_sec,
+                max_duration_sec=max_duration_sec,
+            )
+        )
+    return packed
+
+
+def _split_speech_span(
+    start: int,
+    end: int,
+    *,
+    sampling_rate: int,
+    min_duration_sec: float,
+    max_duration_sec: float,
+) -> list[tuple[int, int]]:
+    span_samples = end - start
+    min_samples = max(1, math.ceil(min_duration_sec * sampling_rate))
+    max_samples = max(1, int(max_duration_sec * sampling_rate))
+    if span_samples < min_samples:
+        return []
+
+    min_chunk_count = math.ceil(span_samples / max_samples)
+    max_chunk_count = span_samples // min_samples
+    chunk_count = min_chunk_count if min_chunk_count <= max_chunk_count else 1
+
+    boundaries = [start + round(i * span_samples / chunk_count) for i in range(chunk_count + 1)]
+    return [(boundaries[i], boundaries[i + 1]) for i in range(chunk_count)]
 
 
 def _with_progress(iterable: Iterable[_T], **kwargs: Any) -> Iterable[_T]:
@@ -327,7 +447,7 @@ def chunk_audio_with_vad(
     config: ChunkConfig | None = None,
     detect: Callable[..., Any] | None = None,
 ) -> list[dict[str, Any]]:
-    """Split `audio` into speech-only chunks bounded by `config`'s duration window.
+    """Split `audio` into speech-focused chunks near `config`'s duration window.
 
     Pass `detect` (a `(audio, sampling_rate) -> [{"start", "end"}, ...]`
     callable) to reuse an already-loaded model across files -- see
@@ -353,26 +473,24 @@ def chunk_audio_with_vad(
         audio = np.mean(audio, axis=-1)
     audio = audio.astype(np.float32, copy=False)
 
-    speech_timestamps = detect(audio, sampling_rate=sr)
-
-    max_samples = int(config.max_duration_sec * sr)
+    speech_spans = _pack_speech_timestamps(
+        detect(audio, sampling_rate=sr),
+        sampling_rate=sr,
+        min_duration_sec=config.min_duration_sec,
+        max_duration_sec=config.max_duration_sec,
+        merge_gap_sec=config.merge_gap_sec,
+        audio_length=len(audio),
+    )
     chunks: list[dict[str, Any]] = []
-    for timestamp in speech_timestamps:
-        segment_start, segment_end = timestamp["start"], timestamp["end"]
-        current_start = segment_start
-        while current_start < segment_end:
-            current_end = min(current_start + max_samples, segment_end)
-            duration = (current_end - current_start) / sr
-            if duration >= config.min_duration_sec:
-                chunks.append(
-                    {
-                        "audio": audio[current_start:current_end],
-                        "start": current_start,
-                        "end": current_end,
-                        "duration": duration,
-                    }
-                )
-            current_start = current_end
+    for chunk_start, chunk_end in speech_spans:
+        chunks.append(
+            {
+                "audio": audio[chunk_start:chunk_end],
+                "start": chunk_start,
+                "end": chunk_end,
+                "duration": (chunk_end - chunk_start) / sr,
+            }
+        )
     return chunks
 
 

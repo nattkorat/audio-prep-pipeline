@@ -53,7 +53,7 @@ status:
 1. Install Python dependencies and FFmpeg.
 2. Run conversion through either the CLI or Python API.
 3. Inspect the manifest for failed files.
-4. Optionally run chunking through either the CLI or Python API to create speech-only segments.
+4. Optionally run chunking through either the CLI or Python API to create speech-focused segments.
 
 CLI:
 
@@ -91,6 +91,7 @@ CLI chunking:
     --output-dir data/chunks \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --vad-backend silero \
     --manifest data/chunk_manifest.jsonl \
     --profile profiles/chunk-silero.json</code></pre>
@@ -102,7 +103,12 @@ Python chunking:
 
 from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_manifest
 
-config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, vad_backend=&quot;silero&quot;)
+config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    merge_gap_sec=1.0,
+    vad_backend=&quot;silero&quot;,
+)
 results = chunk_batch(Path(&quot;data/raw_mp3&quot;), Path(&quot;data/chunks&quot;), config)
 records = build_chunk_manifest(results)
 write_manifest(records, Path(&quot;data/chunk_manifest.jsonl&quot;))</code></pre>

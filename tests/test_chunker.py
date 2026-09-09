@@ -67,6 +67,10 @@ class TestChunkConfig:
         with pytest.raises(ValueError, match="min_duration_sec"):
             ChunkConfig(min_duration_sec=0)
 
+    def test_rejects_negative_merge_gap(self) -> None:
+        with pytest.raises(ValueError, match="merge_gap_sec"):
+            ChunkConfig(merge_gap_sec=-0.1)
+
     def test_rejects_unknown_vad_backend(self) -> None:
         with pytest.raises(ValueError, match="vad_backend"):
             ChunkConfig(vad_backend="unknown")
@@ -215,26 +219,102 @@ class TestPyannoteTimestampAdapter:
 
 
 class TestChunkAudioWithVad:
-    def test_splits_long_speech_into_max_duration_windows(self) -> None:
+    def test_splits_long_speech_into_balanced_windows(self) -> None:
         audio = np.zeros(SR * 9, dtype=np.float32)  # 9s of "speech"
         config = ChunkConfig(min_duration_sec=1, max_duration_sec=4)
 
         chunks = chunk_audio_with_vad(audio, SR, config, detect=all_speech_detect)
 
-        assert [c["duration"] for c in chunks] == pytest.approx([4.0, 4.0, 1.0])
+        assert [c["duration"] for c in chunks] == pytest.approx([3.0, 3.0, 3.0])
         # chunks tile the source without gaps or overlap
         assert chunks[0]["start"] == 0
         assert chunks[-1]["end"] == len(audio)
 
-    def test_drops_leftover_shorter_than_min_duration(self) -> None:
+    def test_redistributes_leftover_instead_of_dropping_tail(self) -> None:
         audio = np.zeros(SR * 4, dtype=np.float32)  # 4s of "speech"
         config = ChunkConfig(min_duration_sec=3, max_duration_sec=3)
 
         chunks = chunk_audio_with_vad(audio, SR, config, detect=all_speech_detect)
 
-        # one 3s chunk; the trailing 1s remainder is below min_duration and dropped
+        # Preserves the full 4s span as one slightly-over-max chunk because it
+        # cannot be split into chunks that satisfy both min=3s and max=3s.
         assert len(chunks) == 1
-        assert chunks[0]["duration"] == pytest.approx(3.0)
+        assert chunks[0]["duration"] == pytest.approx(4.0)
+        assert chunks[0]["end"] == len(audio)
+
+    def test_balances_long_speech_to_avoid_short_final_chunk(self) -> None:
+        audio = np.zeros(SR * 45, dtype=np.float32)
+        config = ChunkConfig(min_duration_sec=10, max_duration_sec=20)
+
+        chunks = chunk_audio_with_vad(audio, SR, config, detect=all_speech_detect)
+
+        assert [c["duration"] for c in chunks] == pytest.approx([15.0, 15.0, 15.0])
+        assert chunks[0]["start"] == 0
+        assert chunks[-1]["end"] == len(audio)
+
+    def test_merges_nearby_short_speech_spans_before_min_filter(self) -> None:
+        audio = np.zeros(SR * 14, dtype=np.float32)
+        config = ChunkConfig(min_duration_sec=10, max_duration_sec=20, merge_gap_sec=1.0)
+
+        def nearby_short_speech(audio: np.ndarray, sampling_rate: int) -> list[dict[str, int]]:
+            return [
+                {"start": 0, "end": 6 * sampling_rate},
+                {"start": 7 * sampling_rate, "end": 14 * sampling_rate},
+            ]
+
+        chunks = chunk_audio_with_vad(audio, SR, config, detect=nearby_short_speech)
+
+        assert len(chunks) == 1
+        assert chunks[0]["duration"] == pytest.approx(14.0)
+        assert chunks[0]["start"] == 0
+        assert chunks[0]["end"] == len(audio)
+
+    def test_packs_short_spans_with_lookahead_then_balances_when_over_max(self) -> None:
+        audio = np.zeros(SR * 27, dtype=np.float32)
+        config = ChunkConfig(min_duration_sec=10, max_duration_sec=20, merge_gap_sec=1.0)
+
+        def short_then_long_speech(audio: np.ndarray, sampling_rate: int) -> list[dict[str, int]]:
+            return [
+                {"start": 0, "end": 4 * sampling_rate},
+                {"start": 5 * sampling_rate, "end": 8 * sampling_rate},
+                {"start": 9 * sampling_rate, "end": 27 * sampling_rate},
+            ]
+
+        chunks = chunk_audio_with_vad(audio, SR, config, detect=short_then_long_speech)
+
+        assert [c["duration"] for c in chunks] == pytest.approx([13.5, 13.5])
+        assert chunks[0]["start"] == 0
+        assert chunks[-1]["end"] == len(audio)
+
+    def test_emits_valid_packed_span_before_next_span_would_exceed_max(self) -> None:
+        audio = np.zeros(SR * 27, dtype=np.float32)
+        config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, merge_gap_sec=1.0)
+
+        def short_then_long_speech(audio: np.ndarray, sampling_rate: int) -> list[dict[str, int]]:
+            return [
+                {"start": 0, "end": 4 * sampling_rate},
+                {"start": 5 * sampling_rate, "end": 8 * sampling_rate},
+                {"start": 9 * sampling_rate, "end": 27 * sampling_rate},
+            ]
+
+        chunks = chunk_audio_with_vad(audio, SR, config, detect=short_then_long_speech)
+
+        assert [c["duration"] for c in chunks] == pytest.approx([8.0, 18.0])
+        assert [(c["start"] / SR, c["end"] / SR) for c in chunks] == [(0.0, 8.0), (9.0, 27.0)]
+
+    def test_drops_short_speech_spans_that_cannot_be_merged(self) -> None:
+        audio = np.zeros(SR * 14, dtype=np.float32)
+        config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, merge_gap_sec=1.0)
+
+        def distant_short_speech(audio: np.ndarray, sampling_rate: int) -> list[dict[str, int]]:
+            return [
+                {"start": 0, "end": 4 * sampling_rate},
+                {"start": 10 * sampling_rate, "end": 14 * sampling_rate},
+            ]
+
+        chunks = chunk_audio_with_vad(audio, SR, config, detect=distant_short_speech)
+
+        assert chunks == []
 
     def test_no_speech_returns_no_chunks(self) -> None:
         audio = np.zeros(SR * 5, dtype=np.float32)

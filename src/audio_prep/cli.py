@@ -100,6 +100,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     chunk.add_argument("--min-duration-sec", type=float, default=5.0)
     chunk.add_argument("--max-duration-sec", type=float, default=20.0)
+    chunk.add_argument(
+        "--merge-gap-sec",
+        type=float,
+        default=1.0,
+        help="silence budget for packing nearby VAD speech spans",
+    )
     chunk.add_argument("--workers", type=int, default=4)
     chunk.add_argument("--overwrite", action="store_true")
     chunk.add_argument(
@@ -208,6 +214,7 @@ def run_chunk(args: argparse.Namespace) -> int:
     config = ChunkConfig(
         min_duration_sec=args.min_duration_sec,
         max_duration_sec=args.max_duration_sec,
+        merge_gap_sec=args.merge_gap_sec,
         output_format=args.format,
         sample_rate=args.sample_rate,
         num_workers=args.workers,
@@ -260,6 +267,9 @@ def run_chunk(args: argparse.Namespace) -> int:
                 "output_dir": str(output_dir),
                 "output_format": args.format,
                 "sample_rate": args.sample_rate,
+                "min_duration_sec": args.min_duration_sec,
+                "max_duration_sec": args.max_duration_sec,
+                "merge_gap_sec": args.merge_gap_sec,
                 "workers": args.workers,
                 "vad_backend": args.vad_backend,
                 "pyannote_model": args.pyannote_model if args.vad_backend == "pyannote" else None,

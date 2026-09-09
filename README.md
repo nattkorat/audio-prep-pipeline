@@ -82,9 +82,9 @@ job three hours in.
 1. **discovery** (`find_audio_files`) — recursively find supported source files
    under an input directory.
 2. **chunking** (`chunk_file` / `chunk_batch`) — runs the selected VAD backend
-   over each file (decoding/resampling via ffmpeg) and splits it into speech-only
-   chunks bounded by a `[min, max]` duration window, so silence-heavy source
-   recordings don't waste pretraining compute.
+   over each file (decoding/resampling via ffmpeg) and splits it into
+   speech-focused chunks near a `[min, max]` duration window, so silence-heavy
+   source recordings don't waste pretraining compute.
 3. **manifest** (`build_chunk_manifest` / `write_manifest`), optional — JSONL
    file, one row per source file, recording `status` (`ok` /
    `chunking_failed`), chunk count, and chunk paths.
@@ -198,6 +198,7 @@ audio-prep chunk \
     --format flac \
     --min-duration-sec 5 \
     --max-duration-sec 20 \
+    --merge-gap-sec 1.0 \
     --workers 4 \
     --manifest data/chunk_manifest.jsonl \
     --profile profiles/chunk-silero.json
@@ -213,6 +214,7 @@ from audio_prep import ChunkConfig, build_chunk_manifest, chunk_batch, write_man
 config = ChunkConfig(
     min_duration_sec=5,
     max_duration_sec=20,
+    merge_gap_sec=1.0,
     output_format="flac",
     sample_rate=16_000,
     num_workers=4,
@@ -231,8 +233,9 @@ write_manifest(records, Path("data/chunk_manifest.jsonl"))
 | `--extensions` | common FFmpeg audio/video extensions | comma-separated source extensions, or `all` to pass every regular file to FFmpeg |
 | `--format` | `wav` | output chunk format (`wav` or `flac`) |
 | `--sample-rate` | 16000 | resample (via ffmpeg) to this rate before chunking if the source doesn't already match it |
-| `--min-duration-sec` | 5.0 | drop chunks shorter than this |
-| `--max-duration-sec` | 20.0 | split longer speech into windows this size |
+| `--min-duration-sec` | 5.0 | minimum target chunk duration after nearby speech spans are packed |
+| `--max-duration-sec` | 20.0 | maximum target chunk duration; long spans are split evenly to avoid short tails |
+| `--merge-gap-sec` | 1.0 | silence budget for packing nearby VAD speech spans before applying duration rules |
 | `--workers` | 4 | parallel chunking workers |
 | `--overwrite` | off | re-chunk even if valid output already exists |
 | `--vad-backend` | `silero` | speech detector backend: `silero`, `pyannote`, or `energy` |
@@ -299,7 +302,12 @@ records = build_manifest(results, validations)
 # source_files bypasses chunk_batch discovery, so this works
 # directly against the already-converted WAV output above.
 valid_outputs = [path for path, v in validations.items() if v.valid]
-chunk_config = ChunkConfig(min_duration_sec=5, max_duration_sec=20, num_workers=4)
+chunk_config = ChunkConfig(
+    min_duration_sec=5,
+    max_duration_sec=20,
+    merge_gap_sec=1.0,
+    num_workers=4,
+)
 chunk_results = chunk_batch(
     Path("data/wav16k"),
     Path("data/wav16k/chunks"),
